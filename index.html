@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учёт ремонта автомобиля</title>
+    <link rel="stylesheet" href="style.css?v=1.0.0">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script type="module" src="script.js"></script>
+</head>
+<body>
+    <div class="top-header">
+        <div class="container">
+            <h1>
+                <ion-icon name="car-sport-outline" class="header-icon"></ion-icon>
+                Учёт ремонта автомобиля
+            </h1>
+            <div id="sync-status" class="sync-status">
+                <ion-icon name="sync-outline"></ion-icon>
+                <span>Загрузка...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Вкладка: Ввод -->
+        <div id="tab-input" class="tab-content active">
+            <div class="card">
+                <h2>
+                    <ion-icon name="add-circle-outline" class="section-icon"></ion-icon>
+                    Добавить запись
+                </h2>
+                
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <ion-icon name="calendar-outline" class="form-icon"></ion-icon>
+                                Дата *
+                            </label>
+                            <input type="date" id="record-date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <ion-icon name="speedometer-outline" class="form-icon"></ion-icon>
+                                Пробег (км) *
+                            </label>
+                            <input type="number" id="record-mileage" step="1" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <ion-icon name="list-outline" class="form-icon"></ion-icon>
+                                Тип работ *
+                            </label>
+                            <select id="record-type" required>
+                                <option value="repair">Ремонт</option>
+                                <option value="oil">Замена масла</option>
+                                <option value="maintenance">ТО</option>
+                                <option value="tire">Шиномонтаж</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <ion-icon name="document-text-outline" class="form-icon"></ion-icon>
+                                Описание
+                            </label>
+                            <input type="text" id="record-description" placeholder="Краткое описание работ">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Детали -->
+                <div class="form-section">
+                    <h3>
+                        <ion-icon name="cube-outline" class="form-icon"></ion-icon>
+                        Запчасти и материалы
+                    </h3>
+                    <div id="parts-list"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addPart()">
+                        <ion-icon name="add-outline"></ion-icon>
+                        Добавить деталь
+                    </button>
+                </div>
+                
+                <!-- Работы -->
+                <div class="form-section">
+                    <h3>
+                        <ion-icon name="construct-outline" class="form-icon"></ion-icon>
+                        Работы
+                    </h3>
+                    <div id="works-list"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addWork()">
+                        <ion-icon name="add-outline"></ion-icon>
+                        Добавить работу
+                    </button>
+                </div>
+                
+                <!-- Итого -->
+                <div class="calc-results">
+                    <div class="calc-item">
+                        <span>Запчасти:</span>
+                        <strong id="total-parts">0 ₽</strong>
+                    </div>
+                    <div class="calc-item">
+                        <span>Работы:</span>
+                        <strong id="total-works">0 ₽</strong>
+                    </div>
+                    <div class="calc-item total">
+                        <span>Итого:</span>
+                        <strong id="total-cost">0 ₽</strong>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-success" onclick="saveRecord()">
+                        <ion-icon name="save-outline"></ion-icon>
+                        Сохранить
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                        <ion-icon name="trash-outline"></ion-icon>
+                        Очистить
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: История -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <h2>
+                    <ion-icon name="time-outline" class="section-icon"></ion-icon>
+                    История обслуживания
+                </h2>
+                
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="filterHistory('all', this)">
+                        <ion-icon name="list-outline"></ion-icon>
+                        Все
+                    </button>
+                    <button class="filter-tab" onclick="filterHistory('repair', this)">
+                        <ion-icon name="hammer-outline"></ion-icon>
+                        Ремонт
+                    </button>
+                    <button class="filter-tab" onclick="filterHistory('oil', this)">
+                        <ion-icon name="drop-outline"></ion-icon>
+                        Масло
+                    </button>
+                    <button class="filter-tab" onclick="filterHistory('maintenance', this)">
+                        <ion-icon name="settings-outline"></ion-icon>
+                        ТО
+                    </button>
+                    <button class="filter-tab" onclick="filterHistory('tire', this)">
+                        <ion-icon name="disc-outline"></ion-icon>
+                        Шины
+                    </button>
+                </div>
+                
+                <div id="history-list" class="history-list"></div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Статистика -->
+        <div id="tab-stats" class="tab-content">
+            <div class="card">
+                <h2>
+                    <ion-icon name="stats-chart-outline" class="section-icon"></ion-icon>
+                    Статистика
+                </h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Всего расходов</h3>
+                        <div class="stat-value" id="stat-total">0 ₽</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Запчасти</h3>
+                        <div class="stat-value" id="stat-parts">0 ₽</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Работы</h3>
+                        <div class="stat-value" id="stat-works">0 ₽</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Записей</h3>
+                        <div class="stat-value" id="stat-count">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Средний расход/км</h3>
+                        <div class="stat-value" id="stat-per-km">0 ₽/км</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Последний пробег</h3>
+                        <div class="stat-value" id="stat-last-mileage">0 км</div>
+                    </div>
+                </div>
+                
+                <div class="stats-by-type">
+                    <h3>Расходы по категориям</h3>
+                    <div id="stats-by-type-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Ещё -->
+        <div id="tab-more" class="tab-content">
+            <div class="card">
+                <h2>
+                    <ion-icon name="ellipsis-horizontal-outline" class="section-icon"></ion-icon>
+                    Управление данными
+                </h2>
+                
+                <div class="sync-status-info">
+                    <h3>Синхронизация</h3>
+                    <div id="sync-status-detail" class="sync-status">
+                        <ion-icon name="sync-outline"></ion-icon>
+                        <span>Проверка...</span>
+                    </div>
+                </div>
+                
+                <div class="data-actions">
+                    <button class="btn btn-secondary" onclick="exportData()">
+                        <ion-icon name="download-outline"></ion-icon>
+                        Экспорт данных (JSON)
+                    </button>
+                    
+                    <div class="import-wrapper">
+                        <button class="btn btn-secondary">
+                            <ion-icon name="upload-outline"></ion-icon>
+                            Импорт данных
+                        </button>
+                        <input type="file" accept=".json" onchange="importData(event)">
+                    </div>
+                    
+                    <button class="btn btn-danger" onclick="resetAllData()">
+                        <ion-icon name="trash-outline"></ion-icon>
+                        Сбросить все данные
+                    </button>
+                </div>
+                
+                <div class="hint-text">
+                    При сбросе удаляются локальные данные. Данные в Firebase сохраняются.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Плавающее меню -->
+    <nav class="floating-nav">
+        <button class="nav-btn active" onclick="switchTab('input', this)">
+            <ion-icon name="add-circle-outline"></ion-icon>
+            <span>Ввод</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('history', this)">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>История</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('stats', this)">
+            <ion-icon name="stats-chart-outline"></ion-icon>
+            <span>Статистика</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('more', this)">
+            <ion-icon name="ellipsis-horizontal-outline"></ion-icon>
+            <span>Ещё</span>
+        </button>
+    </nav>
+
+    <!-- Модальное окно редактирования -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">
+                    <ion-icon name="create-outline"></ion-icon>
+                    Редактирование записи
+                </h3>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <ion-icon name="close-outline"></ion-icon>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">
+                    <ion-icon name="close-outline"></ion-icon>
+                    Отмена
+                </button>
+                <button class="btn btn-success" onclick="saveEditedRecord()">
+                    <ion-icon name="save-outline"></ion-icon>
+                    Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js?v=1.0.0"></script>
+</body>
+</html>
