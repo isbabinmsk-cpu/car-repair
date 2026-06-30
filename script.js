@@ -1991,31 +1991,48 @@ function updateStats() {
     const totalParts = records.reduce((s, r) => s + (r.partsTotal || 0), 0);
     const totalWorks = records.reduce((s, r) => s + (r.worksTotal || 0), 0);
     const count = records.length + fuelRecords.length;
-    const lastMileage = records.length > 0 ? Math.max(...records.map(r => r.mileage || 0)) : (fuelRecords.length > 0 ? Math.max(...fuelRecords.map(r => r.mileage || 0)) : 0);
-    const firstMileage = records.length > 0 ? Math.min(...records.map(r => r.mileage || 0)) : (fuelRecords.length > 0 ? Math.min(...fuelRecords.map(r => r.mileage || 0)) : 0);
+    
+    // Последний пробег из ВСЕХ источников
+    const lastMileage = getCurrentMileage();
+    
+    // Первый пробег из всех источников
+    let firstMileage = Infinity;
+    if (records.length > 0) firstMileage = Math.min(firstMileage, ...records.map(r => r.mileage || 0));
+    if (fuelRecords.length > 0) firstMileage = Math.min(firstMileage, ...fuelRecords.map(r => r.mileage || 0));
+    if (mileageHistory.length > 0) firstMileage = Math.min(firstMileage, ...mileageHistory.map(m => m.mileage));
+    if (firstMileage === Infinity) firstMileage = 0;
+    
     const mileageDiff = lastMileage - firstMileage;
     const perKm = mileageDiff > 0 ? totalCost / mileageDiff : 0;
+    
     const set = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
+    
     set('stat-total', `${totalCost.toFixed(2)} ₽`);
     set('stat-parts', `${totalParts.toFixed(2)} ₽`);
     set('stat-works', `${totalWorks.toFixed(2)} ₽`);
     set('stat-count', count);
     set('stat-per-km', `${perKm.toFixed(2)} ₽/км`);
     set('stat-last-mileage', `${lastMileage.toLocaleString()} км`);
+    
     const byType = {};
     records.forEach(r => {
         if (!byType[r.type]) byType[r.type] = 0;
         byType[r.type] += (r.total || 0);
     });
     byType['fuel'] = fuelRecords.reduce((s, r) => s + (r.total || 0), 0);
+    
     const typeNames = {
-        'repair': 'Ремонт', 'oil': 'Замена масла',
-        'maintenance': 'ТО', 'tire': 'Шиномонтаж',
-        'other': 'Другое', 'fuel': 'Топливо'
+        'repair': 'Ремонт',
+        'oil': 'Замена масла',
+        'maintenance': 'ТО',
+        'tire': 'Шиномонтаж',
+        'other': 'Другое',
+        'fuel': 'Топливо'
     };
+    
     const list = document.getElementById('stats-by-type-list');
     if (list) {
         list.innerHTML = Object.entries(byType).sort((a, b) => b[1] - a[1]).map(([type, total]) => `
