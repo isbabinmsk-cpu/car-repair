@@ -11,11 +11,23 @@
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="firebase-config.js?v=2.0.1"></script>
     <script type="module" src="script.js?v=2.0.1"></script>
 </head>
 <body>
-
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<div id="auth-overlay" class="auth-overlay">
+    <div class="auth-card">
+        <div class="auth-icon">🔒</div>
+        <h2>Вход в систему</h2>
+        <p>Введите данные для синхронизации</p>
+        <input type="email" id="auth-email" placeholder="Email" autocomplete="email" class="auth-input">
+        <input type="password" id="auth-password" placeholder="Пароль" autocomplete="current-password" class="auth-input">
+        <button id="auth-login-btn" class="btn btn-success auth-btn">Войти</button>
+        <p id="auth-error" class="auth-error"></p>
+    </div>
+</div>
+    
 <!-- ИНДИКАТОР ЗАГРУЗКИ -->
 <div id="loading-overlay" class="loading-overlay">
     <div class="loading-spinner"></div>
@@ -398,26 +410,31 @@
         </div>
 
         <div id="more-data" class="more-section" style="display:none;">
-            <div class="card">
-                <h2><ion-icon name="server-outline" class="section-icon"></ion-icon>Управление данными</h2>
-                <div class="sync-status-info">
-                    <h3>Синхронизация</h3>
-                    <div id="sync-status-detail" class="sync-status">
-                        <ion-icon name="phone-portrait-outline"></ion-icon>
-                        <span>Проверка...</span>
-                    </div>
-                </div>
-                <div class="data-actions">
-                    <button class="btn btn-success" onclick="exportData()"><ion-icon name="download-outline"></ion-icon>Экспорт данных (JSON)</button>
-                    <div class="import-wrapper">
-                        <button class="btn btn-secondary"><ion-icon name="upload-outline"></ion-icon>Импорт данных</button>
-                        <input type="file" id="import-file" accept=".json" onchange="importData(event)">
-                    </div>
-                    <button class="btn btn-danger" onclick="resetAllData()"><ion-icon name="trash-outline"></ion-icon>Сбросить все данные</button>
-                </div>
-                <p class="hint-text">При сбросе удаляются локальные данные. Данные в Firebase сохраняются.</p>
+    <div class="card">
+        <h2><ion-icon name="server-outline" class="section-icon"></ion-icon>Управление данными</h2>
+        <div class="sync-status-info">
+            <h3>Синхронизация</h3>
+            <div id="sync-status-detail" class="sync-status">
+                <ion-icon name="phone-portrait-outline"></ion-icon>
+                <span>Проверка...</span>
             </div>
         </div>
+        <div class="data-actions">
+            <button class="btn btn-success" onclick="exportData()"><ion-icon name="download-outline"></ion-icon>Экспорт данных (JSON)</button>
+            <div class="import-wrapper">
+                <button class="btn btn-secondary"><ion-icon name="upload-outline"></ion-icon>Импорт данных</button>
+                <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+            </div>
+            <button class="btn btn-danger" onclick="resetAllData()"><ion-icon name="trash-outline"></ion-icon>Сбросить все данные</button>
+            
+            <!-- КНОПКА ВЫХОДА -->
+            <button class="btn btn-secondary" onclick="logoutUser()" style="border-color: var(--accent-orange); color: var(--accent-orange); margin-top: 8px;">
+                <ion-icon name="log-out-outline"></ion-icon>Выйти из системы
+            </button>
+        </div>
+        <p class="hint-text">При сбросе удаляются локальные данные. Данные в Firebase сохраняются.</p>
+    </div>
+</div>
     </div>
 </div>
 

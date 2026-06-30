@@ -148,6 +148,7 @@ justify-content: center;
 gap: 10px;
 }
 .section-icon { font-size: 28px; color: var(--accent-blue); }
+
 /* ===== PROFILE ===== */
 .profile-layout { display: grid; grid-template-columns: 1fr; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg); }
 @media (min-width: 768px) { .profile-layout { grid-template-columns: 1fr 1fr; } }
@@ -155,22 +156,93 @@ gap: 10px;
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-sm); }
 @media (max-width: 480px) { .form-row-2 { grid-template-columns: 1fr; } }
 .profile-preview {
-background: linear-gradient(135deg, rgba(0, 113, 227, 0.08) 0%, rgba(52, 199, 89, 0.05) 100%);
-border: 1px solid rgba(0, 113, 227, 0.15);
-border-radius: var(--radius-lg);
-padding: var(--spacing-lg);
-margin: var(--spacing-lg) 0;
+    background: linear-gradient(135deg, rgba(0, 113, 227, 0.08) 0%, rgba(52, 199, 89, 0.05) 100%);
+    border: 1px solid rgba(0, 113, 227, 0.15);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
 }
 .preview-header { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-md); padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-light); }
-.preview-header > ion-icon { font-size: 48px; color: var(--accent-blue); }
+.preview-header > ion-icon { font-size: 48px; color: var(--accent-blue); flex-shrink: 0; }
 .preview-title { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-.preview-title > span:first-child { font-size: clamp(18px, 4vw, 22px); font-weight: 600; color: var(--text-primary); word-wrap: break-word; }
-.preview-year { font-size: clamp(13px, 2.5vw, 15px); color: var(--text-secondary); }
-.preview-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-sm); }
-@media (max-width: 480px) { .preview-details { grid-template-columns: 1fr; } }
-.preview-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(255, 255, 255, 0.6); border-radius: var(--radius-md); font-size: clamp(13px, 2.5vw, 14px); color: var(--text-secondary); min-width: 0; overflow: hidden; }
-.preview-item ion-icon { font-size: 18px; color: var(--accent-blue); flex-shrink: 0; }
-.preview-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-title > span:first-child { 
+    font-size: clamp(18px, 4vw, 22px); 
+    font-weight: 600; 
+    color: var(--text-primary); 
+    word-wrap: break-word; 
+    word-break: break-word;
+    hyphens: auto;
+}
+.preview-year { 
+    font-size: clamp(13px, 2.5vw, 15px);  
+    color: var(--text-secondary); 
+}
+
+/* Адаптивная сетка деталей */
+.preview-details { 
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: var(--spacing-sm); 
+}
+
+/* На планшетах - 2 колонки */
+@media (min-width: 481px) and (max-width: 768px) {
+    .preview-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* На мобильных - 1 колонка */
+@media (max-width: 480px) { 
+    .preview-details { 
+        grid-template-columns: 1fr;
+        gap: 8px;
+    } 
+}
+
+.preview-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 10px 12px; 
+    background: rgba(255, 255, 255, 0.6); 
+    border-radius: var(--radius-md); 
+    font-size: clamp(13px, 2.5vw, 14px); 
+    color: var(--text-secondary); 
+    min-width: 0; 
+    overflow: hidden; 
+}
+
+.preview-item ion-icon { 
+    font-size: 18px; 
+    color: var(--accent-blue); 
+    flex-shrink: 0; 
+}
+
+.preview-item span { 
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-weight: 500;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* Улучшение для очень маленьких экранов */
+@media (max-width: 380px) {
+    .preview-item {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    
+    .preview-item ion-icon {
+        font-size: 16px;
+    }
+    
+    .preview-header > ion-icon {
+        font-size: 40px;
+    }
+}
 /* ===== FUEL STATS ===== */
 .fuel-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
 @media (min-width: 768px) { .fuel-stats-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -1203,3 +1275,43 @@ overflow-x: auto;
         transform: translateY(0) scale(1);
     }
 }
+
+/* ===== AUTH SCREEN ===== */
+.auth-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(245, 245, 247, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: none; /* Скрыт по умолчанию, показывается через JS */
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: var(--spacing-md);
+}
+.auth-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-xl);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow-xl);
+}
+.auth-icon { font-size: 48px; margin-bottom: var(--spacing-md); }
+.auth-card h2 { font-size: 24px; margin-bottom: 8px; color: var(--text-primary); }
+.auth-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: var(--spacing-lg); }
+.auth-input {
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    background: var(--bg-secondary);
+    text-align: left;
+}
+.auth-btn { width: 100%; margin-top: 8px; justify-content: center; }
+.auth-error { color: var(--accent-red); font-size: 13px; margin-top: 12px; min-height: 20px; }

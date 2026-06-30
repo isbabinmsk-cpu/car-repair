@@ -1,6 +1,7 @@
 // ===== ИМПОРТ FIREBASE =====
-import { db } from './firebase-config.js';
+import { db, auth } from './firebase-config.js';
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"; // <-- добавили signOut
 
 // ===== ИМЕНА КОЛЛЕКЦИЙ =====
 const COLLECTION_RECORDS = 'car_records';
@@ -52,10 +53,13 @@ function hideLoading() {
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚗 App started');
-    showLoading('Подключение...');
-
+    showLoading('Загрузка локальных данных...');
+    
     try {
-        await initFirebase();
+        // 1. Запускаем слушатель авторизации
+        setupAuthListener();
+
+        // 2. Сразу грузим локальные данные (Offline First)
         loadProfile();
         loadData();
         loadFuelData();
@@ -64,6 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadNotifications();
         await loadNotificationSettings();
         await loadMileageHistory();
+
+        // 3. Инициализируем UI
         initDates();
         updateCarBrief();
         updateServiceSelects();
@@ -78,11 +84,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateMaintenanceStatus();
         updateNotificationHistory();
         updateMileageDisplay();
+        
         addPart();
         addWork();
         setupFuelCalcPreview();
-        checkNotifications();
-        console.log('✅ Initialization complete');
+        
+        // 4. Настраиваем кнопку входа
+        setupAuthUI();
+
+        console.log('✅ Local initialization complete');
     } catch (error) {
         console.error('❌ Initialization error:', error);
         showToast('Ошибка', 'Ошибка при загрузке приложения', 'danger');
@@ -90,6 +100,110 @@ document.addEventListener('DOMContentLoaded', async () => {
         hideLoading();
     }
 });
+
+// ===== АВТОРИЗАЦИЯ =====
+function setupAuthUI() {
+    const loginBtn = document.getElementById('auth-login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const errorEl = document.getElementById('auth-error');
+            
+            if (!email || !password) {
+                errorEl.textContent = 'Заполните все поля';
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Вход...';
+            errorEl.textContent = '';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // Если успешно, onAuthStateChanged сам скроет экран и загрузит данные
+            } catch (error) {
+                console.error('Auth error:', error);
+                errorEl.textContent = 'Неверный email или пароль';
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Войти';
+            }
+        });
+    }
+}
+
+function setupAuthListener() {
+    onAuthStateChanged(auth, async (user) => {
+        const authOverlay = document.getElementById('auth-overlay');
+        
+        if (user) {
+            // ✅ Пользователь вошел в систему
+            if (authOverlay) authOverlay.style.display = 'none';
+            isFirebaseConnected = true;
+            updateSyncStatus('connected');
+            
+            console.log('✅ Authenticated. Syncing with Firebase...');
+            showLoading('Синхронизация...');
+            
+            try {
+                await syncFromFirebase();
+                await syncFuelFromFirebase();
+                await syncProfileFromFirebase();
+                await syncServicesFromFirebase();
+                await syncWarrantiesFromFirebase();
+                await syncNotificationsFromFirebase();
+                await syncMileageFromFirebase();
+                await syncNotificationSettingsFromFirebase();
+                
+                // Обновляем UI после синхронизации
+                updateUnifiedHistory();
+                updateStats();
+                updateFuelStats();
+                updateFuelHistory();
+                updateGarageStats();
+                updateServicesList();
+                updateWarrantyStats();
+                updateWarrantiesList();
+                updateMaintenanceStatus();
+                updateNotificationHistory();
+                updateMileageDisplay();
+                checkNotifications();
+                
+                console.log('✅ Firebase sync complete');
+            } catch (error) {
+                console.error('❌ Sync error:', error);
+                updateSyncStatus('error');
+            } finally {
+                hideLoading();
+            }
+        } else {
+            // ❌ Пользователь не авторизован
+            if (authOverlay) authOverlay.style.display = 'flex';
+            isFirebaseConnected = false;
+            updateSyncStatus('local'); // Показываем статус "Локально"
+        }
+    });
+}
+
+// ===== ВЫХОД ИЗ СИСТЕМЫ =====
+async function logoutUser() {
+    if (!await showConfirm('Выход из системы', 'Вы уверены, что хотите выйти? Данные останутся в облаке.', 'Выйти', 'Отмена', 'warning')) return;
+    
+    showLoading('Выход...');
+    try {
+        await signOut(auth);
+        // onAuthStateChanged автоматически покажет экран входа
+        showToast('Успех', 'Вы вышли из системы', 'success');
+    } catch (error) {
+        console.error('Logout error:', error);
+        showToast('Ошибка', 'Не удалось выйти из системы', 'danger');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Старую функцию initFirebase() можно полностью удалить!
 
 // ===== МОДАЛЬНЫЕ ОКНА =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -147,29 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== FIREBASE =====
-async function initFirebase() {
-    if (!db) {
-        isFirebaseConnected = false;
-        updateSyncStatus('error');
-        return;
-    }
-    try {
-        await getDocs(collection(db, COLLECTION_RECORDS));
-        isFirebaseConnected = true;
-        updateSyncStatus('connected');
-        await syncFromFirebase();
-        await syncFuelFromFirebase();
-        await syncProfileFromFirebase();
-        await syncServicesFromFirebase();
-        await syncWarrantiesFromFirebase();
-        await syncNotificationsFromFirebase();
-        await syncMileageFromFirebase();
-        await syncNotificationSettingsFromFirebase();
-    } catch (error) {
-        isFirebaseConnected = false;
-        updateSyncStatus('error');
-    }
-}
+
 
 function updateSyncStatus(status) {
     const el = document.getElementById('sync-status');
@@ -2489,3 +2581,4 @@ window.quickAddRecord = quickAddRecord;
 window.quickAddFuel = quickAddFuel;
 window.quickAddService = quickAddService;
 window.quickAddMileage = quickAddMileage;
+window.logoutUser = logoutUser;
