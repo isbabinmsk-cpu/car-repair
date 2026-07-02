@@ -2,597 +2,945 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f5f5f7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="АвтоУчёт">
     <title>Учёт ремонта автомобиля</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="firebase-config.js?v=2.0.1"></script>
-    <script type="module" src="script.js?v=2.0.1"></script>
+    <script type="module" src="script.js?v=2.2.0"></script>
+    <script type="module">
+        import { db, auth } from './firebase-config.js';
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+    </script>
 </head>
 <body>
-<!-- ЭКРАН АВТОРИЗАЦИИ -->
-<div id="auth-overlay" class="auth-overlay">
-    <div class="auth-card">
-        <div class="auth-icon">🔒</div>
-        <h2>Вход в систему</h2>
-        <p>Введите данные для синхронизации</p>
-        <input type="email" id="auth-email" placeholder="Email" autocomplete="email" class="auth-input">
-        <input type="password" id="auth-password" placeholder="Пароль" autocomplete="current-password" class="auth-input">
-        <button id="auth-login-btn" class="btn btn-success auth-btn">Войти</button>
-        <p id="auth-error" class="auth-error"></p>
-    </div>
-</div>
-    
-<!-- ИНДИКАТОР ЗАГРУЗКИ -->
-<div id="loading-overlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Загрузка...</div>
-</div>
+    <div class="container">
+        <header class="top-header">
+            <h1><span class="header-icon">🔧</span>Учёт ремонта автомобиля</h1>
+            <div id="car-brief" class="car-brief"></div>
+            <div id="sync-status" class="sync-status">
+                <ion-icon name="cloud-offline-outline"></ion-icon>
+                <span>📱 Локально</span>
+            </div>
+        </header>
 
-<div class="container">
-    <header class="top-header">
-        <ion-icon name="car-sport-outline" class="header-icon"></ion-icon>
-        <h1>Учёт ремонта автомобиля</h1>
-        <div id="car-brief" class="car-brief"></div>
-        <div id="sync-status" class="sync-status">
-            <ion-icon name="phone-portrait-outline"></ion-icon>
-            <span>📱 Локально</span>
+        <!-- ЭКРАН АВТОРИЗАЦИИ -->
+        <div id="auth-overlay" class="auth-overlay">
+            <div class="auth-card">
+                <div class="auth-icon">🔒</div>
+                <h2>Вход в систему</h2>
+                <p>Введите данные для синхронизации</p>
+                <input type="email" id="auth-email" placeholder="Email" autocomplete="email" class="auth-input">
+                <input type="password" id="auth-password" placeholder="Пароль" autocomplete="current-password" class="auth-input">
+               <button id="auth-login-btn" class="btn btn-success auth-btn">Войти</button>
+<button id="auth-register-btn" class="btn btn-secondary auth-btn" style="margin-top: 8px;">Создать аккаунт</button>
+                <p id="auth-error" class="auth-error"></p>
+            </div>
         </div>
-    </header>
 
-    <!-- ПРОФИЛЬ -->
-    <div id="tab-profile" class="tab-content active">
-        <div class="card">
-            <h2><ion-icon name="person-circle-outline" class="section-icon"></ion-icon>Профиль автомобиля</h2>
-            <div class="profile-layout">
-                <div class="profile-column">
-                    <div class="form-section">
+        <!-- ЗАГРУЗКА -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Загрузка...</div>
+        </div>
+
+        <!-- ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ -->
+        <div id="confirm-modal" class="confirm-modal-overlay">
+            <div class="confirm-modal">
+                <div class="confirm-modal-icon">
+                    <ion-icon name="alert-circle-outline"></ion-icon>
+                </div>
+                <h3 id="confirm-title">Подтверждение</h3>
+                <p id="confirm-message">Вы уверены?</p>
+                <div class="confirm-modal-actions">
+                    <button id="confirm-cancel" class="btn btn-secondary">Отмена</button>
+                    <button id="confirm-ok" class="btn btn-danger">Удалить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПРОФИЛЬ -->
+        <div id="tab-profile" class="tab-content active">
+            <div class="card">
+                <h2><ion-icon name="car-sport-outline" class="section-icon"></ion-icon>Профиль автомобиля</h2>
+                
+                <div class="profile-layout">
+                    <div class="profile-column">
                         <h3>Основная информация</h3>
                         <div class="form-row-2">
-                            <div class="form-group"><label>Марка *</label><input type="text" id="profile-brand" placeholder="Например, Toyota"></div>
-                            <div class="form-group"><label>Модель *</label><input type="text" id="profile-model" placeholder="Например, Camry"></div>
-                        </div>
-                        <div class="form-row-2">
-                            <div class="form-group"><label>Год выпуска</label><input type="number" id="profile-year" placeholder="2020"></div>
-                            <div class="form-group"><label>Цвет</label><input type="text" id="profile-color" placeholder="Белый"></div>
-                        </div>
-                        <div class="form-group"><label>Комплектация</label><input type="text" id="profile-trim" placeholder="Престиж"></div>
-                    </div>
-                    <div class="form-section">
-                        <h3>Технические данные</h3>
-                        <div class="form-row-2">
-                            <div class="form-group"><label>VIN номер</label><input type="text" id="profile-vin" placeholder="XTA..."></div>
-                            <div class="form-group"><label>Государственный номер</label><input type="text" id="profile-plate" placeholder="А123БВ77"></div>
-                        </div>
-                        <div class="form-row-2">
-                            <div class="form-group"><label>Дата покупки</label><input type="date" id="profile-purchase-date"></div>
-                            <div class="form-group"><label>Начальный пробег (км)</label><input type="number" id="profile-initial-mileage" placeholder="10000"></div>
-                        </div>
-                        <div class="form-group"><label>Заметки</label><textarea id="profile-notes" placeholder="Дополнительная информация"></textarea></div>
-                    </div>
-                </div>
-                <div class="profile-column">
-                    <div class="profile-preview">
-                        <div class="preview-header">
-                            <ion-icon name="car-sport"></ion-icon>
-                            <div class="preview-title">
-                                <span id="preview-car-name">Автомобиль не указан</span>
-                                <span id="preview-car-year" class="preview-year"></span>
+                            <div class="form-group">
+                                <label>Марка *</label>
+                                <input type="text" id="profile-brand" placeholder="Например: Toyota">
+                            </div>
+                            <div class="form-group">
+                                <label>Модель *</label>
+                                <input type="text" id="profile-model" placeholder="Например: Camry">
                             </div>
                         </div>
-                        <div class="preview-details">
-                            <div class="preview-item"><ion-icon name="pricetag-outline"></ion-icon><span id="preview-plate">—</span></div>
-                            <div class="preview-item"><ion-icon name="calendar-outline"></ion-icon><span id="preview-purchase">—</span></div>
-                            <div class="preview-item"><ion-icon name="speedometer-outline"></ion-icon><span id="preview-mileage">— км</span></div>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Год выпуска</label>
+                                <input type="number" id="profile-year" placeholder="2020" min="1900" max="2099">
+                            </div>
+                            <div class="form-group">
+                                <label>Цвет</label>
+                                <input type="text" id="profile-color" placeholder="Например: Чёрный">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Комплектация</label>
+                            <input type="text" id="profile-trim" placeholder="Например: LTZ">
                         </div>
                     </div>
-                    <!-- БЫСТРОЕ ОБНОВЛЕНИЕ ПРОБЕГА -->
-<div class="mileage-update-card">
-    <div class="mileage-update-header">
-        <ion-icon name="speedometer-outline"></ion-icon>
-        <div>
-            <h4>Текущий пробег</h4>
-            <span id="current-mileage-display" class="mileage-value">— км</span>
-        </div>
-    </div>
-    <div class="mileage-update-form">
-        <input type="number" id="quick-mileage-input" placeholder="Введите текущий пробег" min="0">
-        <button class="btn btn-success btn-small" onclick="updateMileage()">
-            <ion-icon name="checkmark-outline"></ion-icon>
-            Обновить
-        </button>
-    </div>
-    <div id="mileage-history-section" class="mileage-history" style="display:none;">
-        <h5>История показаний</h5>
-        <div id="mileage-history-list"></div>
-    </div>
-</div>
-                    <div class="form-actions">
-                        <button class="btn btn-success" onclick="saveProfile()"><ion-icon name="save-outline"></ion-icon>Сохранить профиль</button>
-                        <button class="btn btn-secondary" onclick="clearProfile()"><ion-icon name="trash-outline"></ion-icon>Очистить</button>
+
+                    <div class="profile-column">
+                        <h3>Технические данные</h3>
+                        <div class="form-group">
+                            <label>VIN номер</label>
+                            <input type="text" id="profile-vin" placeholder="17 символов" maxlength="17">
+                        </div>
+                        <div class="form-group">
+                            <label>Государственный номер</label>
+                            <input type="text" id="profile-plate" placeholder="Например: А123БВ777">
+                        </div>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Дата покупки</label>
+                                <input type="date" id="profile-purchase-date">
+                            </div>
+                            <div class="form-group">
+                                <label>Начальный пробег (км)</label>
+                                <input type="number" id="profile-initial-mileage" placeholder="0" min="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Заметки</label>
+                            <textarea id="profile-notes" rows="3" placeholder="Дополнительная информация"></textarea>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- ДОБАВИТЬ ЗАПИСЬ -->
-    <div id="tab-add" class="tab-content">
-        <div class="card">
-            <h2><ion-icon name="add-circle-outline" class="section-icon"></ion-icon>Добавить запись</h2>
-            <div class="form-row-2">
-                <div class="form-group"><label>Дата *</label><input type="date" id="record-date" required></div>
-                <div class="form-group"><label>Пробег (км) *</label><input type="number" id="record-mileage" placeholder="150000" required></div>
-            </div>
-            <div class="form-row-2">
-                <div class="form-group">
-                    <label>Тип работ *</label>
-                    <select id="record-type">
-                        <option value="repair">Ремонт</option>
-                        <option value="oil">Замена масла</option>
-                        <option value="maintenance">ТО</option>
-                        <option value="tire">Шиномонтаж</option>
-                        <option value="other">Другое</option>
-                    </select>
+                <div class="profile-preview">
+                    <div class="preview-header">
+                        <ion-icon name="car-sport-outline"></ion-icon>
+                        <div class="preview-title">
+                            <span id="preview-car-name">Автомобиль не указан</span>
+                            <span id="preview-car-year" class="preview-year"></span>
+                        </div>
+                    </div>
+                    <div class="preview-details">
+                        <div class="preview-item">
+                            <ion-icon name="location-outline"></ion-icon>
+                            <span id="preview-plate">—</span>
+                        </div>
+                        <div class="preview-item">
+                            <ion-icon name="calendar-outline"></ion-icon>
+                            <span id="preview-purchase">—</span>
+                        </div>
+                        <div class="preview-item">
+                            <ion-icon name="speedometer-outline"></ion-icon>
+                            <span id="preview-mileage">— км</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Сервис/СТО</label>
-                    <select id="record-service"><option value="">-- Не указан --</option></select>
+
+                <div class="form-actions">
+                    <button class="btn btn-success" onclick="saveProfile()">
+                        <ion-icon name="save-outline"></ion-icon>Сохранить профиль
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearProfile()">
+                        <ion-icon name="trash-outline"></ion-icon>Очистить
+                    </button>
                 </div>
             </div>
-            <div class="form-group"><label>Описание</label><input type="text" id="record-description" placeholder="Краткое описание"></div>
-            
-            <div class="form-section">
-                <h3>Запчасти и материалы</h3>
-                <div id="parts-list"></div>
-                <button type="button" class="btn btn-secondary btn-small" onclick="addPart()"><ion-icon name="add-outline"></ion-icon>Добавить деталь</button>
-            </div>
-            
-            <div class="form-section">
-                <h3>Работы</h3>
-                <div id="works-list"></div>
-                <button type="button" class="btn btn-secondary btn-small" onclick="addWork()"><ion-icon name="add-outline"></ion-icon>Добавить работу</button>
-            </div>
 
-            <div class="calc-results">
-                <div class="calc-item"><span>Запчасти:</span><span id="total-parts">0 ₽</span></div>
-                <div class="calc-item"><span>Работы:</span><span id="total-works">0 ₽</span></div>
-                <div class="calc-item total"><span>Итого:</span><span id="total-cost">0 ₽</span></div>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn btn-success" onclick="saveRecord()"><ion-icon name="save-outline"></ion-icon>Сохранить</button>
-                <button class="btn btn-secondary" onclick="clearForm()"><ion-icon name="refresh-outline"></ion-icon>Очистить</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ОБЪЕДИНЁННАЯ ИСТОРИЯ -->
-    <div id="tab-history" class="tab-content">
-        <div class="card">
-            <h2><ion-icon name="time-outline" class="section-icon"></ion-icon>История</h2>
-            
-            <!-- Фильтры -->
-            <div class="filter-tabs">
-                <button class="filter-tab active" onclick="filterHistory('all', this)">Все</button>
-                <button class="filter-tab" onclick="filterHistory('repair', this)">Ремонт</button>
-                <button class="filter-tab" onclick="filterHistory('oil', this)">Масло</button>
-                <button class="filter-tab" onclick="filterHistory('maintenance', this)">ТО</button>
-                <button class="filter-tab" onclick="filterHistory('tire', this)">Шины</button>
-                <button class="filter-tab" onclick="filterHistory('fuel', this)">Топливо</button>
-            </div>
-
-            <!-- Объединённый список -->
-            <div id="unified-history-list" class="history-list"></div>
-        </div>
-    </div>
-
-    <!-- СТАТИСТИКА -->
-    <div id="tab-stats" class="tab-content">
-        <div class="card">
-            <h2><ion-icon name="stats-chart-outline" class="section-icon"></ion-icon>Статистика</h2>
-            <div class="stats-grid">
-                <div class="stat-card"><h3>Всего расходов</h3><div class="stat-value" id="stat-total">0 ₽</div></div>
-                <div class="stat-card"><h3>Запчасти</h3><div class="stat-value" id="stat-parts">0 ₽</div></div>
-                <div class="stat-card"><h3>Работы</h3><div class="stat-value" id="stat-works">0 ₽</div></div>
-                <div class="stat-card"><h3>Записей</h3><div class="stat-value" id="stat-count">0</div></div>
-                <div class="stat-card"><h3>Средний расход/км</h3><div class="stat-value" id="stat-per-km">0 ₽/км</div></div>
-                <div class="stat-card"><h3>Последний пробег</h3><div class="stat-value" id="stat-last-mileage">0 км</div></div>
-            </div>
-            <div class="stats-by-type">
-                <h3>Расходы по категориям</h3>
-                <div id="stats-by-type-list" class="stats-by-type-list"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- МЕНЮ "ЕЩЁ" -->
-    <div id="tab-more" class="tab-content">
-        <div class="card">
-            <h2><ion-icon name="ellipsis-horizontal-outline" class="section-icon"></ion-icon>Дополнительно</h2>
-            <div class="more-menu-grid">
-                <button class="more-menu-btn" onclick="showMoreSection('fuel')">
-                    <ion-icon name="flame-outline"></ion-icon>
-                    <span>Топливо</span>
-                </button>
-                <button class="more-menu-btn" onclick="showMoreSection('garage')">
-                    <ion-icon name="business-outline"></ion-icon>
-                    <span>Гараж</span>
-                </button>
-                <button class="more-menu-btn" onclick="showMoreSection('warranties')">
-                    <ion-icon name="shield-checkmark-outline"></ion-icon>
-                    <span>Гарантии</span>
-                </button>
-                <button class="more-menu-btn" onclick="showMoreSection('notifications')">
-                    <ion-icon name="notifications-outline"></ion-icon>
-                    <span>Уведомления</span>
-                </button>
-                <button class="more-menu-btn" onclick="showMoreSection('data')">
-                    <ion-icon name="server-outline"></ion-icon>
-                    <span>Данные</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Секции из меню -->
-        <div id="more-fuel" class="more-section" style="display:none;">
+            <!-- ОБНОВЛЕНИЕ ПРОБЕГА -->
             <div class="card">
-                <h2><ion-icon name="fuel-outline" class="section-icon"></ion-icon>Расход топлива</h2>
-                <div class="fuel-stats-grid">
-                    <div class="fuel-stat-card"><h3>Средний расход</h3><div class="fuel-stat-value" id="fuel-avg-consumption">— л/100км</div></div>
-                    <div class="fuel-stat-card"><h3>Всего заправлено</h3><div class="fuel-stat-value" id="fuel-total-liters">0 л</div></div>
-                    <div class="fuel-stat-card"><h3>Потрачено на топливо</h3><div class="fuel-stat-value" id="fuel-total-cost">0 ₽</div></div>
-                    <div class="fuel-stat-card"><h3>Заправок</h3><div class="fuel-stat-value" id="fuel-count">0</div></div>
-                </div>
-
-                <div class="fuel-history-section">
-                    <h3><ion-icon name="flash-outline"></ion-icon>Новая заправка</h3>
-                    <div class="fuel-inputs-row">
-                        <div class="form-group"><label>Дата *</label><input type="date" id="fuel-date" required></div>
-                        <div class="form-group"><label>Пробег (км) *</label><input type="number" id="fuel-mileage" placeholder="150000" required></div>
+                <div class="mileage-update-card">
+                    <div class="mileage-update-header">
+                        <ion-icon name="speedometer-outline"></ion-icon>
+                        <div>
+                            <h4>Текущий пробег</h4>
+                            <span id="current-mileage-display" class="mileage-value">— км</span>
+                        </div>
                     </div>
-                    <div class="fuel-inputs-row">
-                        <div class="form-group"><label>Литры *</label><input type="number" step="0.1" id="fuel-liters" placeholder="40.5" required></div>
-                        <div class="form-group"><label>Цена за литр (₽) *</label><input type="number" step="0.01" id="fuel-price" placeholder="55.90" required></div>
-                    </div>
-                    <div class="fuel-calc-preview">
-                        <div class="fuel-calc-item"><span>Стоимость заправки:</span><span id="fuel-calc-total">0 ₽</span></div>
-                        <div class="fuel-calc-item"><span>Расход:</span><span id="fuel-calc-consumption">— л/100км</span></div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn btn-success" onclick="saveFuelRecord()"><ion-icon name="save-outline"></ion-icon>Добавить заправку</button>
-                        <button class="btn btn-secondary" onclick="clearFuelForm()"><ion-icon name="refresh-outline"></ion-icon>Очистить</button>
+                    <div class="mileage-update-form">
+                        <input type="number" id="quick-mileage-input" placeholder="Введите текущий пробег" min="0">
+                        <button class="btn btn-success" onclick="updateMileage()">
+                            <ion-icon name="refresh-outline"></ion-icon>Обновить
+                        </button>
                     </div>
                 </div>
-
-                <div class="fuel-chart-section">
-                    <h3><ion-icon name="trending-up-outline"></ion-icon>Динамика расхода топлива</h3>
-                    <div class="chart-container"><canvas id="fuelChart"></canvas></div>
-                </div>
-
-                <div class="fuel-history-section">
-                    <h3><ion-icon name="list-outline"></ion-icon>История заправок</h3>
-                    <div id="fuel-history-list" class="fuel-history-list"></div>
+                <div id="mileage-history-section" class="mileage-history" style="display: none;">
+                    <h5>История показаний</h5>
+                    <div id="mileage-history-list"></div>
                 </div>
             </div>
         </div>
 
-        <div id="more-garage" class="more-section" style="display:none;">
+        <!-- ДОБАВИТЬ ЗАПИСЬ -->
+        <div id="tab-add" class="tab-content">
             <div class="card">
-                <h2><ion-icon name="business-outline" class="section-icon"></ion-icon>Гараж / Сервисы</h2>
-                <div class="garage-stats-grid">
-                    <div class="garage-stat-card"><h3>Всего сервисов</h3><div class="garage-stat-value" id="garage-count">0</div></div>
-                    <div class="garage-stat-card"><h3>Всего посещений</h3><div class="garage-stat-value" id="garage-visits-count">0</div></div>
-                    <div class="garage-stat-card"><h3>Потрачено в сервисах</h3><div class="garage-stat-value" id="garage-total-spent">0 ₽</div></div>
-                </div>
-
-                <div class="garage-list-section">
-                    <h3><ion-icon name="add-circle-outline"></ion-icon>Добавить сервис/СТО</h3>
-                    <div class="form-group"><label>Название *</label><input type="text" id="service-name" placeholder="Название сервиса"></div>
-                    <div class="form-group"><label>Адрес</label><input type="text" id="service-address" placeholder="Адрес"></div>
-                    <div class="form-group"><label>Телефон</label><input type="text" id="service-phone" placeholder="+7 ..."></div>
-                    <div class="form-group"><label>Заметки</label><textarea id="service-notes" placeholder="Заметки"></textarea></div>
-                    <div class="form-actions">
-                        <button class="btn btn-success" onclick="saveService()"><ion-icon name="save-outline"></ion-icon>Добавить сервис</button>
-                        <button class="btn btn-secondary" onclick="clearServiceForm()"><ion-icon name="refresh-outline"></ion-icon>Очистить</button>
-                    </div>
-                </div>
-
-                <div class="garage-list-section">
-                    <h3><ion-icon name="list-outline"></ion-icon>Мои сервисы</h3>
-                    <div id="services-list" class="services-list"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="more-warranties" class="more-section" style="display:none;">
-            <div class="card">
-                <h2><ion-icon name="shield-checkmark-outline" class="section-icon"></ion-icon>Гарантии</h2>
-                <div class="warranty-stats-grid">
-                    <div class="warranty-stat-card"><h3>Активных гарантий</h3><div class="warranty-stat-value" id="warranty-active-count">0</div></div>
-                    <div class="warranty-stat-card"><h3>Истекают скоро</h3><div class="warranty-stat-value warranty-warning" id="warranty-expiring-count">0</div></div>
-                    <div class="warranty-stat-card"><h3>Истекло</h3><div class="warranty-stat-value warranty-danger" id="warranty-expired-count">0</div></div>
-                </div>
-
-                <div class="warranty-list-section">
-                    <h3><ion-icon name="add-circle-outline"></ion-icon>Добавить гарантию</h3>
-                    <div class="form-group"><label>Название запчасти/работы *</label><input type="text" id="warranty-part" placeholder="Например, Генератор"></div>
-                    <div class="form-group">
-                        <label>Сервис/Магазин</label>
-                        <select id="warranty-service"><option value="">-- Не указан --</option></select>
-                    </div>
-                    <div class="warranty-inputs-row">
-                        <div class="form-group"><label>Дата покупки/установки *</label><input type="date" id="warranty-start-date" required></div>
-                        <div class="form-group"><label>Срок гарантии (месяцев) *</label><input type="number" id="warranty-months" placeholder="12" required></div>
-                    </div>
-                    <div class="form-group"><label>Стоимость (₽)</label><input type="number" id="warranty-cost" placeholder="15000"></div>
-                    <div class="form-group"><label>Заметки</label><textarea id="warranty-notes" placeholder="Заметки"></textarea></div>
-                    <div class="form-actions">
-                        <button class="btn btn-success" onclick="saveWarranty()"><ion-icon name="save-outline"></ion-icon>Добавить гарантию</button>
-                        <button class="btn btn-secondary" onclick="clearWarrantyForm()"><ion-icon name="refresh-outline"></ion-icon>Очистить</button>
-                    </div>
-                </div>
-
-                <div class="warranty-list-section">
-                    <h3><ion-icon name="list-outline"></ion-icon>Мои гарантии</h3>
-                    <div id="warranties-list" class="warranties-list"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="more-notifications" class="more-section" style="display:none;">
-            <div class="card">
-                <h2><ion-icon name="notifications-outline" class="section-icon"></ion-icon>Умные уведомления</h2>
+                <h2><ion-icon name="add-circle-outline" class="section-icon"></ion-icon>Добавить запись</h2>
                 
-                <div class="notification-status-card">
-                    <div class="notification-status-header">
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Дата *</label>
+                            <input type="date" id="record-date" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Пробег (км) *</label>
+                            <input type="number" id="record-mileage" placeholder="Например: 45000" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Тип работ *</label>
+                            <select id="record-type" required>
+                                <option value="repair">Ремонт</option>
+                                <option value="oil">Замена масла</option>
+                                <option value="maintenance">ТО</option>
+                                <option value="tire">Шиномонтаж</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Сервис/СТО</label>
+                            <select id="record-service">
+                                <option value="">-- Не указан --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Описание</label>
+                            <input type="text" id="record-description" placeholder="Краткое описание работ">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Что менялось?</h3>
+                    <div class="service-items-grid">
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="oil">
+                            <span class="service-item-icon">🛢️</span>
+                            <span class="service-item-name">Масло</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="oilFilter">
+                            <span class="service-item-icon">🔵</span>
+                            <span class="service-item-name">Масляный фильтр</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="airFilter">
+                            <span class="service-item-icon">💨</span>
+                            <span class="service-item-name">Воздушный фильтр</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="cabinFilter">
+                            <span class="service-item-icon">🌬️</span>
+                            <span class="service-item-name">Салонный фильтр</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="sparkPlugs">
+                            <span class="service-item-icon">⚡</span>
+                            <span class="service-item-name">Свечи зажигания</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="brakePads">
+                            <span class="service-item-icon">🔴</span>
+                            <span class="service-item-name">Тормозные колодки</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="coolant">
+                            <span class="service-item-icon">❄️</span>
+                            <span class="service-item-name">Охлаждающая жидкость</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="brakeFluid">
+                            <span class="service-item-icon">💧</span>
+                            <span class="service-item-name">Тормозная жидкость</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="transmissionFluid">
+                            <span class="service-item-icon">⚙️</span>
+                            <span class="service-item-name">Трансмиссионное масло</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="tires">
+                            <span class="service-item-icon">🛞</span>
+                            <span class="service-item-name">Шины/Колёса</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="battery">
+                            <span class="service-item-icon">🔋</span>
+                            <span class="service-item-name">Аккумулятор</span>
+                        </label>
+                        <label class="service-item-checkbox">
+                            <input type="checkbox" name="service-item" value="wipers">
+                            <span class="service-item-icon">🌧️</span>
+                            <span class="service-item-name">Дворники</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Запчасти и материалы</h3>
+                    <div id="parts-list"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addPart()">
+                        <ion-icon name="add-outline"></ion-icon>Добавить деталь
+                    </button>
+                </div>
+
+                <div class="form-section">
+                    <h3>Работы</h3>
+                    <div id="works-list"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addWork()">
+                        <ion-icon name="add-outline"></ion-icon>Добавить работу
+                    </button>
+                </div>
+
+                <div class="calc-results">
+                    <div class="calc-item">
+                        <span>Запчасти:</span>
+                        <span id="total-parts">0 ₽</span>
+                    </div>
+                    <div class="calc-item">
+                        <span>Работы:</span>
+                        <span id="total-works">0 ₽</span>
+                    </div>
+                    <div class="calc-item total">
+                        <span>Итого:</span>
+                        <span id="total-cost">0 ₽</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-success" onclick="saveRecord()">
+                        <ion-icon name="save-outline"></ion-icon>Сохранить
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearForm()">
+                        <ion-icon name="trash-outline"></ion-icon>Очистить
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ИСТОРИЯ -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <h2><ion-icon name="time-outline" class="section-icon"></ion-icon>История</h2>
+                
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="filterHistory('all', this)">Все</button>
+                    <button class="filter-tab" onclick="filterHistory('repair', this)">Ремонт</button>
+                    <button class="filter-tab" onclick="filterHistory('oil', this)">Масло</button>
+                    <button class="filter-tab" onclick="filterHistory('maintenance', this)">ТО</button>
+                    <button class="filter-tab" onclick="filterHistory('tire', this)">Шины</button>
+                    <button class="filter-tab" onclick="filterHistory('fuel', this)">Топливо</button>
+                </div>
+
+                <div id="unified-history-list" class="history-list"></div>
+            </div>
+        </div>
+
+        <!-- СТАТИСТИКА -->
+        <div id="tab-stats" class="tab-content">
+            <div class="card">
+                <h2><ion-icon name="stats-chart-outline" class="section-icon"></ion-icon>Статистика</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Всего расходов</h3>
+                        <div id="stat-total" class="stat-value">0 ₽</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Запчасти</h3>
+                        <div id="stat-parts" class="stat-value">0 ₽</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Работы</h3>
+                        <div id="stat-works" class="stat-value">0 ₽</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Записей</h3>
+                        <div id="stat-count" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Средний расход/км</h3>
+                        <div id="stat-per-km" class="stat-value">0 ₽/км</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Последний пробег</h3>
+                        <div id="stat-last-mileage" class="stat-value">0 км</div>
+                    </div>
+                </div>
+
+                <div class="stats-by-type">
+                    <h3>Расходы по категориям</h3>
+                    <div id="stats-by-type-list" class="stats-by-type-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЕЩЁ (ДОПОЛНИТЕЛЬНО) -->
+        <div id="tab-more" class="tab-content">
+            <div class="card">
+                <h2><ion-icon name="ellipsis-horizontal-outline" class="section-icon"></ion-icon>Дополнительно</h2>
+                
+                <div class="more-menu-grid">
+                    <button class="more-menu-btn" onclick="showMoreSection('fuel')">
+                        <ion-icon name="flame-outline"></ion-icon>
+                        <span>Топливо</span>
+                    </button>
+                    <button class="more-menu-btn" onclick="showMoreSection('garage')">
+                        <ion-icon name="business-outline"></ion-icon>
+                        <span>Гараж</span>
+                    </button>
+                    <button class="more-menu-btn" onclick="showMoreSection('warranties')">
+                        <ion-icon name="shield-checkmark-outline"></ion-icon>
+                        <span>Гарантии</span>
+                    </button>
+                    <button class="more-menu-btn" onclick="showMoreSection('notifications')">
                         <ion-icon name="notifications-outline"></ion-icon>
-                        <span>Встроенные уведомления</span>
-                    </div>
-                    <div class="notification-status-body">
-                        <span>Уведомления отображаются внутри приложения</span>
-                        <button class="btn btn-secondary btn-small" onclick="showToast('Тест', 'Встроенные уведомления работают!', 'info')">Тест</button>
-                    </div>
+                        <span>Уведомления</span>
+                    </button>
+                    <button class="more-menu-btn" onclick="showMoreSection('data')">
+                        <ion-icon name="cloud-download-outline"></ion-icon>
+                        <span>Данные</span>
+                    </button>
                 </div>
+            </div>
 
-                <div class="maintenance-status-section">
-                    <h3><ion-icon name="settings-outline"></ion-icon>Настройки обслуживания</h3>
-                    <div class="notification-settings-grid">
-                        <div class="notification-setting">
-                            <div class="setting-icon"><ion-icon name="drop-outline"></ion-icon></div>
-                            <div class="setting-info"><label>Замена масла</label><span class="setting-description">Интервал в км</span></div>
-                            <input type="number" id="setting-oil-interval" value="10000">
+            <!-- ТОПЛИВО -->
+            <div id="more-fuel" class="more-section" style="display: none;">
+                <div class="card">
+                    <h2><ion-icon name="fuel-outline" class="section-icon"></ion-icon>Расход топлива</h2>
+                    
+                    <div class="fuel-stats-grid">
+                        <div class="fuel-stat-card">
+                            <h3>Средний расход</h3>
+                            <div id="fuel-avg-consumption" class="fuel-stat-value">— л/100км</div>
                         </div>
-                        <div class="notification-setting">
-                            <div class="setting-icon"><ion-icon name="air-outline"></ion-icon></div>
-                            <div class="setting-info"><label>Воздушный фильтр</label><span class="setting-description">Интервал в км</span></div>
-                            <input type="number" id="setting-air-filter-interval" value="15000">
+                        <div class="fuel-stat-card">
+                            <h3>Всего заправлено</h3>
+                            <div id="fuel-total-liters" class="fuel-stat-value">0 л</div>
                         </div>
-                        <div class="notification-setting">
-                            <div class="setting-icon"><ion-icon name="flame-outline"></ion-icon></div>
-                            <div class="setting-info"><label>Свечи зажигания</label><span class="setting-description">Интервал в км</span></div>
-                            <input type="number" id="setting-spark-plugs-interval" value="30000">
+                        <div class="fuel-stat-card">
+                            <h3>Потрачено на топливо</h3>
+                            <div id="fuel-total-cost" class="fuel-stat-value">0 ₽</div>
                         </div>
-                        <div class="notification-setting">
-                            <div class="setting-icon"><ion-icon name="disc-outline"></ion-icon></div>
-                            <div class="setting-info"><label>Тормозные колодки</label><span class="setting-description">Интервал в км</span></div>
-                            <input type="number" id="setting-brake-pads-interval" value="40000">
-                        </div>
-                        <div class="notification-setting">
-                            <div class="setting-icon"><ion-icon name="settings-outline"></ion-icon></div>
-                            <div class="setting-info"><label>Плановое ТО</label><span class="setting-description">Интервал в км</span></div>
-                            <input type="number" id="setting-maintenance-interval" value="15000">
-                        </div>
-                        <div class="notification-setting">
-                            <div class="setting-icon"><ion-icon name="thermometer-outline"></ion-icon></div>
-                            <div class="setting-info"><label>Охлаждающая жидкость</label><span class="setting-description">Интервал в км</span></div>
-                            <input type="number" id="setting-coolant-interval" value="60000">
+                        <div class="fuel-stat-card">
+                            <h3>Заправок</h3>
+                            <div id="fuel-count" class="fuel-stat-value">0</div>
                         </div>
                     </div>
-                    <button class="btn btn-success" onclick="saveNotificationSettings()"><ion-icon name="save-outline"></ion-icon>Сохранить настройки</button>
+
+                    <div class="form-section">
+                        <h3>Новая заправка</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Дата *</label>
+                                <input type="date" id="fuel-date" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Пробег (км) *</label>
+                                <input type="number" id="fuel-mileage" placeholder="Текущий пробег" min="0" required>
+                            </div>
+                        </div>
+                        <div class="fuel-inputs-row">
+                            <div class="form-group">
+                                <label>Литры *</label>
+                                <input type="number" id="fuel-liters" placeholder="Например: 40" step="0.01" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Цена за литр (₽) *</label>
+                                <input type="number" id="fuel-price" placeholder="Например: 52.50" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        
+                        <div class="fuel-calc-preview">
+                            <div class="fuel-calc-item">
+                                <span>Стоимость заправки:</span>
+                                <span id="fuel-calc-total">0 ₽</span>
+                            </div>
+                            <div class="fuel-calc-item">
+                                <span>Расход:</span>
+                                <span id="fuel-calc-consumption">— л/100км</span>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-success" onclick="saveFuelRecord()">
+                                <ion-icon name="save-outline"></ion-icon>Добавить заправку
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearFuelForm()">
+                                <ion-icon name="trash-outline"></ion-icon>Очистить
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="fuel-chart-section">
+                        <h3>Динамика расхода топлива</h3>
+                        <div class="chart-container">
+                            <canvas id="fuelChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="fuel-history-section">
+                        <h3>История заправок</h3>
+                        <div id="fuel-history-list" class="fuel-history-list"></div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="maintenance-status-section">
-                    <h3><ion-icon name="pulse-outline"></ion-icon>Статус обслуживания</h3>
-                    <div id="maintenance-status-list" class="maintenance-status-list"></div>
+            <!-- ГАРАЖ -->
+            <div id="more-garage" class="more-section" style="display: none;">
+                <div class="card">
+                    <h2><ion-icon name="business-outline" class="section-icon"></ion-icon>Гараж / Сервисы</h2>
+                    
+                    <div class="garage-stats-grid">
+                        <div class="garage-stat-card">
+                            <h3>Всего сервисов</h3>
+                            <div id="garage-count" class="garage-stat-value">0</div>
+                        </div>
+                        <div class="garage-stat-card">
+                            <h3>Всего посещений</h3>
+                            <div id="garage-visits-count" class="garage-stat-value">0</div>
+                        </div>
+                        <div class="garage-stat-card">
+                            <h3>Потрачено в сервисах</h3>
+                            <div id="garage-total-spent" class="garage-stat-value">0 ₽</div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Добавить сервис/СТО</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Название *</label>
+                                <input type="text" id="service-name" placeholder="Например: АвтоСервис №1" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Адрес</label>
+                                <input type="text" id="service-address" placeholder="Город, улица, дом">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Телефон</label>
+                                <input type="tel" id="service-phone" placeholder="+7 (999) 999-99-99">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Заметки</label>
+                                <textarea id="service-notes" rows="2" placeholder="Дополнительная информация"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-success" onclick="saveService()">
+                                <ion-icon name="save-outline"></ion-icon>Добавить сервис
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearServiceForm()">
+                                <ion-icon name="trash-outline"></ion-icon>Очистить
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="garage-list-section">
+                        <h3>Мои сервисы</h3>
+                        <div id="services-list" class="services-list"></div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="notification-history-section">
-                    <h3><ion-icon name="time-outline"></ion-icon>История уведомлений</h3>
-                    <div id="notification-history-list" class="notification-history-list"></div>
+            <!-- ГАРАНТИИ -->
+            <div id="more-warranties" class="more-section" style="display: none;">
+                <div class="card">
+                    <h2><ion-icon name="shield-checkmark-outline" class="section-icon"></ion-icon>Гарантии</h2>
+                    
+                    <div class="warranty-stats-grid">
+                        <div class="warranty-stat-card">
+                            <h3>Активных гарантий</h3>
+                            <div id="warranty-active-count" class="warranty-stat-value">0</div>
+                        </div>
+                        <div class="warranty-stat-card">
+                            <h3>Истекают скоро</h3>
+                            <div id="warranty-expiring-count" class="warranty-stat-value warranty-warning">0</div>
+                        </div>
+                        <div class="warranty-stat-card">
+                            <h3>Истекло</h3>
+                            <div id="warranty-expired-count" class="warranty-stat-value warranty-danger">0</div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Добавить гарантию</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Название запчасти/работы *</label>
+                                <input type="text" id="warranty-part" placeholder="Например: Аккумулятор" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Сервис/Магазин</label>
+                                <select id="warranty-service">
+                                    <option value="">-- Не указан --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="warranty-inputs-row">
+                            <div class="form-group">
+                                <label>Дата покупки/установки *</label>
+                                <input type="date" id="warranty-start-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Срок гарантии (месяцев) *</label>
+                                <input type="number" id="warranty-months" placeholder="Например: 12" min="1" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Стоимость (₽)</label>
+                                <input type="number" id="warranty-cost" placeholder="0" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Заметки</label>
+                                <textarea id="warranty-notes" rows="2" placeholder="Номер чека, дополнительные условия"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-success" onclick="saveWarranty()">
+                                <ion-icon name="save-outline"></ion-icon>Добавить гарантию
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearWarrantyForm()">
+                                <ion-icon name="trash-outline"></ion-icon>Очистить
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="warranty-list-section">
+                        <h3>Мои гарантии</h3>
+                        <div id="warranties-list" class="warranties-list"></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="more-data" class="more-section" style="display:none;">
-    <div class="card">
-        <h2><ion-icon name="server-outline" class="section-icon"></ion-icon>Управление данными</h2>
-        <div class="sync-status-info">
-            <h3>Синхронизация</h3>
-            <div id="sync-status-detail" class="sync-status">
-                <ion-icon name="phone-portrait-outline"></ion-icon>
-                <span>Проверка...</span>
-            </div>
-        </div>
-        <div class="data-actions">
-            <button class="btn btn-success" onclick="exportData()"><ion-icon name="download-outline"></ion-icon>Экспорт данных (JSON)</button>
-            <div class="import-wrapper">
-                <button class="btn btn-secondary"><ion-icon name="upload-outline"></ion-icon>Импорт данных</button>
-                <input type="file" id="import-file" accept=".json" onchange="importData(event)">
-            </div>
-            <button class="btn btn-danger" onclick="resetAllData()"><ion-icon name="trash-outline"></ion-icon>Сбросить все данные</button>
-            
-            <!-- КНОПКА ВЫХОДА -->
-            <button class="btn btn-secondary" onclick="logoutUser()" style="border-color: var(--accent-orange); color: var(--accent-orange); margin-top: 8px;">
-                <ion-icon name="log-out-outline"></ion-icon>Выйти из системы
-            </button>
-        </div>
-        <p class="hint-text">При сбросе удаляются локальные данные. Данные в Firebase сохраняются.</p>
-    </div>
-</div>
-    </div>
-</div>
+            <!-- УВЕДОМЛЕНИЯ -->
+            <div id="more-notifications" class="more-section" style="display: none;">
+                <div class="card">
+                    <h2><ion-icon name="notifications-outline" class="section-icon"></ion-icon>Умные уведомления</h2>
+                    
+                    <div class="notification-status-card">
+                        <div class="notification-status-header">
+                            <ion-icon name="notifications-outline"></ion-icon>
+                            <span>Встроенные уведомления</span>
+                        </div>
+                        <div class="notification-status-body">
+                            <span>Уведомления отображаются внутри приложения</span>
+                            <button class="btn btn-small btn-secondary" onclick="checkNotifications()">Тест</button>
+                        </div>
+                    </div>
 
-<!-- НАВИГАЦИЯ (5 вкладок) -->
-<nav class="floating-nav">
-    <button class="nav-btn active" onclick="switchTab('profile', this)">
-        <ion-icon name="car-sport-outline"></ion-icon>
-        <span>Авто</span>
-    </button>
-    <button class="nav-btn" onclick="switchTab('add', this)">
-        <ion-icon name="add-circle-outline"></ion-icon>
-        <span>Ввод</span>
-    </button>
-    <button class="nav-btn" onclick="switchTab('history', this)">
-        <ion-icon name="time-outline"></ion-icon>
-        <span>История</span>
-    </button>
-    <button class="nav-btn" onclick="switchTab('stats', this)">
-        <ion-icon name="stats-chart-outline"></ion-icon>
-        <span>Стат.</span>
-    </button>
-    <button class="nav-btn" onclick="switchTab('more', this)">
-        <ion-icon name="ellipsis-horizontal-outline"></ion-icon>
-        <span>Ещё</span>
-    </button>
-</nav>
+                    <div class="notification-settings-section">
+                        <h3>Настройки обслуживания</h3>
+                        <div class="notification-settings-grid">
+                            <div class="notification-setting">
+                                <div class="setting-icon">
+                                    <ion-icon name="drop-outline"></ion-icon>
+                                </div>
+                                <div class="setting-info">
+                                    <label>Замена масла</label>
+                                    <div class="setting-description">Интервал в км</div>
+                                </div>
+                                <input type="number" id="setting-oil-interval" placeholder="10000" min="1000" step="1000">
+                            </div>
+                            <div class="notification-setting">
+                                <div class="setting-icon">
+                                    <ion-icon name="air-outline"></ion-icon>
+                                </div>
+                                <div class="setting-info">
+                                    <label>Воздушный фильтр</label>
+                                    <div class="setting-description">Интервал в км</div>
+                                </div>
+                                <input type="number" id="setting-air-filter-interval" placeholder="15000" min="1000" step="1000">
+                            </div>
+                            <div class="notification-setting">
+                                <div class="setting-icon">
+                                    <ion-icon name="flame-outline"></ion-icon>
+                                </div>
+                                <div class="setting-info">
+                                    <label>Свечи зажигания</label>
+                                    <div class="setting-description">Интервал в км</div>
+                                </div>
+                                <input type="number" id="setting-spark-plugs-interval" placeholder="30000" min="1000" step="1000">
+                            </div>
+                            <div class="notification-setting">
+                                <div class="setting-icon">
+                                    <ion-icon name="disc-outline"></ion-icon>
+                                </div>
+                                <div class="setting-info">
+                                    <label>Тормозные колодки</label>
+                                    <div class="setting-description">Интервал в км</div>
+                                </div>
+                                <input type="number" id="setting-brake-pads-interval" placeholder="40000" min="1000" step="1000">
+                            </div>
+                            <div class="notification-setting">
+                                <div class="setting-icon">
+                                    <ion-icon name="settings-outline"></ion-icon>
+                                </div>
+                                <div class="setting-info">
+                                    <label>Плановое ТО</label>
+                                    <div class="setting-description">Интервал в км</div>
+                                </div>
+                                <input type="number" id="setting-maintenance-interval" placeholder="15000" min="1000" step="1000">
+                            </div>
+                            <div class="notification-setting">
+                                <div class="setting-icon">
+                                    <ion-icon name="thermometer-outline"></ion-icon>
+                                </div>
+                                <div class="setting-info">
+                                    <label>Охлаждающая жидкость</label>
+                                    <div class="setting-description">Интервал в км</div>
+                                </div>
+                                <input type="number" id="setting-coolant-interval" placeholder="60000" min="1000" step="1000">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-success" onclick="saveNotificationSettings()">
+                                <ion-icon name="save-outline"></ion-icon>Сохранить настройки
+                            </button>
+                        </div>
+                    </div>
 
-<!-- МОДАЛЬНЫЕ ОКНА -->
-<div id="edit-modal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modal-title"><ion-icon name="create-outline"></ion-icon>Редактирование записи</h3>
-            <button class="modal-close" onclick="closeEditModal()"><ion-icon name="close-outline"></ion-icon></button>
-        </div>
-        <div id="modal-body" class="modal-body"></div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
-            <button class="btn btn-success" onclick="saveEditedRecord()">Сохранить</button>
-        </div>
-    </div>
-</div>
+                    <div class="maintenance-status-section">
+                        <h3>Статус обслуживания</h3>
+                        <div id="maintenance-status-list" class="maintenance-status-list"></div>
+                    </div>
 
-<div id="service-visit-modal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><ion-icon name="add-circle-outline"></ion-icon>Добавить посещение</h3>
-            <button class="modal-close" onclick="closeServiceVisitModal()"><ion-icon name="close-outline"></ion-icon></button>
-        </div>
-        <div class="modal-body">
-            <p>Форма добавления посещения</p>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeServiceVisitModal()">Отмена</button>
-            <button class="btn btn-success">Сохранить</button>
-        </div>
-    </div>
-</div>
+                    <div class="notification-history-section">
+                        <h3>История уведомлений</h3>
+                        <div id="notification-history-list" class="notification-history-list"></div>
+                    </div>
+                </div>
+            </div>
 
-<div id="edit-service-modal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><ion-icon name="create-outline"></ion-icon>Редактировать сервис</h3>
-            <button class="modal-close" onclick="closeEditServiceModal()"><ion-icon name="close-outline"></ion-icon></button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label>Название *</label>
-                <input type="text" id="edit-service-name" placeholder="Название сервиса">
-            </div>
-            <div class="form-group">
-                <label>Адрес</label>
-                <input type="text" id="edit-service-address" placeholder="Адрес">
-            </div>
-            <div class="form-group">
-                <label>Телефон</label>
-                <input type="text" id="edit-service-phone" placeholder="+7 ...">
-            </div>
-            <div class="form-group">
-                <label>Заметки</label>
-                <textarea id="edit-service-notes" placeholder="Заметки"></textarea>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeEditServiceModal()">Отмена</button>
-            <button class="btn btn-success" onclick="saveEditedService()">Сохранить</button>
-        </div>
-    </div>
-</div>    
-    
-<!-- FAB КНОПКА -->
-<button class="fab-button" onclick="openQuickAddModal()" title="Быстрое добавление">
-    <ion-icon name="add-outline"></ion-icon>
+            <!-- ДАННЫЕ -->
+            <div id="more-data" class="more-section" style="display: none;">
+                <div class="card">
+                    <h2><ion-icon name="cloud-sync-outline" class="section-icon"></ion-icon>Управление данными</h2>
+                    
+                    <div class="sync-status-info">
+                        <h3>Синхронизация</h3>
+                        <div id="sync-status-detail" class="sync-status">
+                            <ion-icon name="cloud-offline-outline"></ion-icon>
+                            <span>Проверка...</span>
+                        </div>
+                    </div>
+
+                    <div class="data-actions">
+                        <button class="btn btn-secondary" onclick="exportData()">
+                            <ion-icon name="download-outline"></ion-icon>Экспорт данных (JSON)
+                        </button>
+                        
+                        <div class="import-wrapper">
+                            <button class="btn btn-secondary">
+                                <ion-icon name="upload-outline"></ion-icon>Импорт данных
+                            </button>
+                            <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+                        </div>
+                        
+                        <button class="btn btn-danger" onclick="resetAllData()">
+                            <ion-icon name="trash-outline"></ion-icon>Сбросить все данные
+                        </button>
+
+                        <button class="btn btn-secondary" onclick="logoutUser()" id="logout-btn">
+                            <ion-icon name="log-out-outline"></ion-icon>Выйти из системы
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteAccount()">
+    <ion-icon name="person-remove-outline"></ion-icon>
+    Удалить аккаунт
 </button>
+                    </div>
 
-<!-- МОДАЛЬНОЕ ОКНО БЫСТРОГО ДОБАВЛЕНИЯ -->
-<div id="quick-add-modal" class="modal-overlay">
+                    <p class="hint-text">
+                        При сбросе удаляются локальные данные. Данные в Firebase сохраняются.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ -->
+        <div id="edit-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title"><ion-icon name="create-outline"></ion-icon>Редактирование записи</h3>
+                    <button class="modal-close" onclick="closeEditModal()">
+                        <ion-icon name="close-outline"></ion-icon>
+                    </button>
+                </div>
+                <div id="modal-body" class="modal-body"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeEditModal()">Отмена</button>
+                    <button class="btn btn-success" onclick="saveEditedRecord()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО ПОСЕЩЕНИЯ СЕРВИСА -->
+        <div id="service-visit-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><ion-icon name="business-outline"></ion-icon>Добавить посещение</h3>
+                    <button class="modal-close" onclick="closeServiceVisitModal()">
+                        <ion-icon name="close-outline"></ion-icon>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Форма добавления посещения</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeServiceVisitModal()">Отмена</button>
+                    <button class="btn btn-success" onclick="saveServiceVisit()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕРВИСА -->
+        <div id="edit-service-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><ion-icon name="create-outline"></ion-icon>Редактировать сервис</h3>
+                    <button class="modal-close" onclick="closeEditServiceModal()">
+                        <ion-icon name="close-outline"></ion-icon>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Название *</label>
+                        <input type="text" id="edit-service-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Адрес</label>
+                        <input type="text" id="edit-service-address">
+                    </div>
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="tel" id="edit-service-phone">
+                    </div>
+                    <div class="form-group">
+                        <label>Заметки</label>
+                        <textarea id="edit-service-notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeEditServiceModal()">Отмена</button>
+                    <button class="btn btn-success" onclick="saveEditedService()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- БЫСТРОЕ ДОБАВЛЕНИЕ (FAB) -->
+        <button class="fab-button" onclick="openQuickAddModal()">
+            <ion-icon name="add-outline"></ion-icon>
+        </button>
+
+       <div id="quick-add-modal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><ion-icon name="flash-outline"></ion-icon>Быстрое добавление</h3>
+            <h3><ion-icon name="add-circle-outline"></ion-icon> Быстрое добавление</h3>
             <button class="modal-close" onclick="closeQuickAddModal()">
                 <ion-icon name="close-outline"></ion-icon>
             </button>
         </div>
         <div class="modal-body">
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--spacing-lg);">
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">
                 Выберите тип записи:
             </p>
             <div class="quick-add-grid">
                 <button class="quick-add-btn" onclick="quickAddRecord('repair')">
-                    <ion-icon name="construct-outline"></ion-icon>
+                    <ion-icon name="construct-outline" style="font-size: 32px; color: var(--accent-blue);"></ion-icon>
                     <span>Ремонт</span>
                 </button>
-                <button class="quick-add-btn" onclick="quickAddRecord('oil')">
-                    <ion-icon name="oil-outline"></ion-icon>
+                <button class="quick-add-btn fuel-btn" onclick="quickAddRecord('oil')">
+                    <ion-icon name="water-outline" style="font-size: 32px; color: var(--accent-orange);"></ion-icon>
                     <span>Замена масла</span>
                 </button>
-                <button class="quick-add-btn" onclick="quickAddRecord('maintenance')">
-                    <ion-icon name="settings-outline"></ion-icon>
+                <button class="quick-add-btn service-btn" onclick="quickAddRecord('maintenance')">
+                    <ion-icon name="settings-outline" style="font-size: 32px; color: var(--accent-teal);"></ion-icon>
                     <span>ТО</span>
                 </button>
                 <button class="quick-add-btn" onclick="quickAddRecord('tire')">
-                    <ion-icon name="disc-outline"></ion-icon>
+                    <ion-icon name="car-sport-outline" style="font-size: 32px; color: var(--accent-blue);"></ion-icon>
                     <span>Шиномонтаж</span>
                 </button>
                 <button class="quick-add-btn fuel-btn" onclick="quickAddFuel()">
-                    <ion-icon name="flame-outline"></ion-icon>
+                    <ion-icon name="flame-outline" style="font-size: 32px; color: var(--accent-orange);"></ion-icon>
                     <span>Заправка</span>
                 </button>
                 <button class="quick-add-btn service-btn" onclick="quickAddService()">
-                    <ion-icon name="business-outline"></ion-icon>
+                    <ion-icon name="business-outline" style="font-size: 32px; color: var(--accent-teal);"></ion-icon>
                     <span>Сервис</span>
                 </button>
-                <button class="quick-add-btn" onclick="quickAddMileage()">
-    <ion-icon name="speedometer-outline"></ion-icon>
-    <span>Пробег</span>
-</button>
             </div>
+            <button class="btn" onclick="quickAddMileage()" style="width: 100%; margin-top: 16px;">
+                <ion-icon name="speedometer-outline"></ion-icon>
+                <span>Пробег</span>
+            </button>
         </div>
     </div>
-</div>   
-    
-<!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ -->
-<div id="confirm-modal" class="confirm-modal-overlay">
-    <div class="confirm-modal">
-        <div class="confirm-modal-icon">
-            <ion-icon name="alert-circle-outline"></ion-icon>
-        </div>
-        <h3 id="confirm-title">Подтверждение</h3>
-        <p id="confirm-message">Вы уверены?</p>
-        <div class="confirm-modal-actions">
-            <button class="btn btn-secondary" id="confirm-cancel">Отмена</button>
-            <button class="btn btn-danger" id="confirm-ok">Удалить</button>
-        </div>
+</div>
     </div>
-</div>    
-    
-<!-- TOAST CONTAINER -->
-<div id="toast-container" class="toast-container"></div>
 
+    <!-- НАВИГАЦИЯ -->
+    <nav class="floating-nav">
+        <button class="nav-btn active" onclick="switchTab('profile', this)">
+            <ion-icon name="car-sport-outline"></ion-icon>
+            <span>Авто</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('add', this)">
+            <ion-icon name="add-circle-outline"></ion-icon>
+            <span>Ввод</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('history', this)">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>История</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('stats', this)">
+            <ion-icon name="stats-chart-outline"></ion-icon>
+            <span>Стат.</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('more', this)">
+            <ion-icon name="ellipsis-horizontal-outline"></ion-icon>
+            <span>Ещё</span>
+        </button>
+    </nav>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
