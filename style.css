@@ -2922,155 +2922,8 @@ textarea { resize: vertical; min-height: 80px; }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ===== AUTH SCREEN ===== */
-.auth-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(245, 245, 247, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: var(--spacing-md);
-}
 
-.auth-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(30px) saturate(180%);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-2xl);
-    padding: var(--spacing-xl);
-    max-width: 400px;
-    width: 100%;
-    text-align: center;
-    box-shadow: var(--shadow-xl);
-}
 
-@media (min-width: 1024px) {
-    .auth-card { padding: var(--spacing-2xl); max-width: 480px; }
-}
-
-.auth-icon { font-size: 48px; margin-bottom: var(--spacing-md); }
-
-@media (min-width: 1024px) {
-    .auth-icon { font-size: 56px; }
-}
-
-.auth-card h2 { font-size: 24px; margin-bottom: 8px; color: var(--text-primary); }
-
-@media (min-width: 1024px) {
-    .auth-card h2 { font-size: 28px; }
-}
-
-.auth-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: var(--spacing-lg); }
-
-@media (min-width: 1024px) {
-    .auth-card p { font-size: 16px; }
-}
-
-.auth-input {
-    width: 100%;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    font-size: 16px;
-    background: var(--bg-secondary);
-    text-align: left;
-}
-
-@media (min-width: 1024px) {
-    .auth-input { padding: 16px 18px; font-size: 18px; }
-}
-
-.auth-btn { width: 100%; margin-top: 8px; justify-content: center; }
-.auth-error { color: var(--accent-red); font-size: 13px; margin-top: 12px; min-height: 20px; }
-
-@media (min-width: 1024px) {
-    .auth-error { font-size: 15px; }
-}
-
-/* ===== ЧЕКБОКСЫ РАБОТ ===== */
-.service-items-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
-}
-
-@media (min-width: 600px) {
-    .service-items-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (min-width: 1024px) {
-    .service-items-grid { grid-template-columns: repeat(4, 1fr); gap: var(--spacing-md); }
-}
-
-.service-item-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: var(--bg-secondary);
-    border: 1.5px solid var(--border-light);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    user-select: none;
-}
-
-@media (min-width: 1024px) {
-    .service-item-checkbox { padding: 14px 16px; }
-}
-
-.service-item-checkbox:hover {
-    border-color: var(--accent-blue);
-    background: rgba(0, 113, 227, 0.05);
-}
-
-.service-item-checkbox input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    cursor: pointer;
-    accent-color: var(--accent-blue);
-}
-
-@media (min-width: 1024px) {
-    .service-item-checkbox input[type="checkbox"] { width: 20px; height: 20px; }
-}
-
-.service-item-checkbox input[type="checkbox"]:checked + .service-item-icon + .service-item-name,
-.service-item-checkbox input[type="checkbox"]:checked ~ .service-item-name {
-    color: var(--accent-blue);
-    font-weight: 600;
-}
-
-.service-item-checkbox:has(input:checked) {
-    border-color: var(--accent-blue);
-    background: rgba(0, 113, 227, 0.08);
-}
-
-.service-item-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-}
-
-@media (min-width: 1024px) {
-    .service-item-icon { font-size: 22px; }
-}
-
-.service-item-name {
-    font-size: clamp(12px, 2.5vw, 13px);
-    color: var(--text-primary);
-    font-weight: 500;
-}
-
-@media (min-width: 1024px) {
-    .service-item-name { font-size: 15px; }
-}
 
 /* ===== ОТОБРАЖЕНИЕ ВЫПОЛНЕННЫХ РАБОТ ===== */
 .history-service-items { margin-top: var(--spacing-sm); }
@@ -3143,4 +2996,661 @@ textarea { resize: vertical; min-height: 80px; }
     .service-item-checkbox { padding: 8px; }
     .service-item-icon { font-size: 14px; }
     .service-item-name { font-size: 12px; }
+}
+
+/* ===== УЛУЧШЕННЫЙ ЭКРАН АВТОРИЗАЦИИ ===== */
+.auth-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.auth-overlay.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.auth-container {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-logo {
+    margin-bottom: 16px;
+}
+
+.logo-icon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 12px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.auth-logo h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ios-text-primary);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.auth-subtitle {
+    color: var(--ios-text-tertiary);
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Табы */
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+    background: rgba(142, 142, 147, 0.1);
+    padding: 6px;
+    border-radius: 16px;
+}
+
+.auth-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border: none;
+    background: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ios-text-tertiary);
+    cursor: pointer;
+    transition: all 0.3s var(--ios-spring);
+    border-radius: 12px;
+    font-family: inherit;
+}
+
+.auth-tab ion-icon {
+    font-size: 20px;
+}
+
+.auth-tab.active {
+    background: #FFFFFF;
+    color: var(--ios-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.auth-tab:not(.active):hover {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--ios-text-primary);
+}
+
+/* Формы */
+.auth-form {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ios-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group label ion-icon {
+    font-size: 16px;
+    color: var(--ios-accent);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 16px 18px;
+    border: 2px solid var(--ios-border);
+    border-radius: 14px;
+    font-size: 16px;
+    background: var(--ios-bg-input);
+    color: var(--ios-text-primary);
+    transition: all 0.3s var(--ios-spring);
+    font-family: inherit;
+    font-weight: 500;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--ios-accent);
+    background: var(--ios-bg-secondary);
+    box-shadow: 0 0 0 4px var(--ios-accent-light);
+}
+
+.form-group input::placeholder {
+    color: var(--ios-text-quaternary);
+}
+
+/* Поле пароля с кнопкой показа */
+.password-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input input {
+    padding-right: 50px;
+    flex: 1;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: var(--ios-text-tertiary);
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-password:hover {
+    color: var(--ios-accent);
+}
+
+.toggle-password ion-icon {
+    font-size: 20px;
+}
+
+/* Индикатор сложности пароля */
+.password-strength {
+    margin-top: 8px;
+    height: 4px;
+    background: var(--ios-border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.password-strength::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background: var(--ios-danger);
+    transition: all 0.3s;
+}
+
+.password-strength.weak::after {
+    width: 33%;
+    background: var(--ios-danger);
+}
+
+.password-strength.medium::after {
+    width: 66%;
+    background: var(--ios-warning);
+}
+
+.password-strength.strong::after {
+    width: 100%;
+    background: var(--ios-success);
+}
+
+/* Опции формы */
+.form-options {
+    margin-bottom: 24px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--ios-text-secondary);
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--ios-accent);
+}
+
+.checkbox-label .link {
+    color: var(--ios-accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.checkbox-label .link:hover {
+    text-decoration: underline;
+}
+
+
+
+/* Ошибки */
+.auth-error {
+    color: var(--ios-danger);
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+    font-weight: 600;
+    padding: 8px;
+    background: var(--ios-danger-light);
+    border-radius: 8px;
+    margin-top: 8px;
+    display: none;
+}
+
+.auth-error.show {
+    display: block;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* Футер */
+.auth-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--ios-border);
+}
+
+.auth-footer p {
+    font-size: 12px;
+    color: var(--ios-text-quaternary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 32px 24px;
+        border-radius: 20px;
+    }
+    
+    .logo-icon {
+        font-size: 56px;
+    }
+    
+    .auth-logo h1 {
+        font-size: 24px;
+    }
+    
+    .auth-tabs {
+        gap: 8px;
+    }
+    
+    .auth-tab {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    
+    .form-group input {
+        padding: 14px 16px;
+        font-size: 16px;
+    }
+    
+    .btn-auth {
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+}
+
+/* Состояние загрузки */
+.btn-auth.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn-auth.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== ФИНАЛЬНЫЕ СТИЛИ КНОПОК АВТОРИЗАЦИИ ===== */
+#auth-login-btn,
+#auth-register-btn,
+.auth-btn {
+    background: var(--ios-accent) !important;
+    color: #000000 !important;
+    border: none !important;
+    padding: 16px 24px !important;
+    border-radius: 14px !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3) !important;
+    transition: all 0.3s var(--ios-spring) !important;
+    text-shadow: none !important;
+}
+
+#auth-login-btn:hover,
+#auth-register-btn:hover,
+.auth-btn:hover {
+    background: var(--ios-accent-hover) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4) !important;
+}
+
+#auth-login-btn:active,
+#auth-register-btn:active {
+    transform: scale(0.96) !important;
+}
+
+/* Иконки внутри кнопок */
+#auth-login-btn ion-icon,
+#auth-register-btn ion-icon,
+.auth-btn ion-icon {
+    font-size: 20px !important;
+    color: #000000 !important;
+    margin-right: 8px !important;
+}
+
+/* Убираем все стандартные стили браузера */
+button[type="submit"],
+button[type="button"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+}
+
+/* Состояние загрузки */
+.auth-btn.loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.auth-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== СВЕТЛО-СЕРЫЙ TEXT В ПОЛЯХ ВВОДА ===== */
+
+/* Основные формы */
+.form-group input::placeholder,
+.form-group select::placeholder,
+textarea::placeholder {
+    color: #C7C7CC !important;
+    opacity: 1 !important;
+    font-weight: 500;
+}
+
+/* Формы авторизации */
+.auth-form .form-group input::placeholder {
+    color: #C7C7CC !important;
+    opacity: 1 !important;
+}
+
+/* Формы сравнения периодов */
+.comparison-period input::placeholder,
+.comparison-period select::placeholder {
+    color: #C7C7CC !important;
+    opacity: 1 !important;
+}
+
+/* Топливо */
+#fuel-liters::placeholder,
+#fuel-price::placeholder,
+#fuel-mileage::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* Профиль */
+#profile-brand::placeholder,
+#profile-model::placeholder,
+#profile-color::placeholder,
+#profile-trim::placeholder,
+#profile-vin::placeholder,
+#profile-plate::placeholder,
+#profile-notes::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* Сервисы */
+#service-name::placeholder,
+#service-address::placeholder,
+#service-phone::placeholder,
+#service-notes::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* Гарантии */
+#warranty-part::placeholder,
+#warranty-notes::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* Быстрый пробег */
+#quick-mileage-input::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* Динамические поля (запчасти и работы) */
+.part-name::placeholder,
+.part-cost::placeholder,
+.work-name::placeholder,
+.work-cost::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* Поля в модальном окне редактирования */
+#edit-description::placeholder {
+    color: #C7C7CC !important;
+}
+
+/* ===== ОБЫЧНЫЙ ТЕКСТ В ПОЛЯХ (не placeholder) ===== */
+/* Остается темным для читаемости */
+.form-group input,
+.form-group select,
+textarea,
+.auth-form .form-group input,
+.comparison-period input,
+.comparison-period select {
+    color: var(--ios-text-primary) !important;
+    font-weight: 500;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .form-group input::placeholder,
+    .auth-form .form-group input::placeholder {
+        font-size: 15px;
+    }
+}
+
+/* ===== СЕКЦИЯ "ЧТО МЕНЯЛОСЬ?" - УЛУЧШЕННЫЙ ВАРИАНТ ===== */
+.service-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.service-item-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--ios-bg-secondary);
+    border: 1.5px solid var(--ios-border);
+    border-radius: var(--ios-radius-md);
+    cursor: pointer;
+    transition: all 0.3s var(--ios-spring);
+    user-select: none;
+}
+
+.service-item-checkbox:hover {
+    border-color: var(--ios-accent);
+    background: rgba(0, 122, 255, 0.05);
+    transform: translateY(-1px);
+    box-shadow: var(--ios-shadow-sm);
+}
+
+.service-item-checkbox input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--ios-accent);
+    flex-shrink: 0;
+}
+
+.service-item-checkbox input[type="checkbox"]:checked {
+    width: 22px;
+    height: 22px;
+}
+
+.service-item-checkbox:has(input:checked) {
+    border-color: var(--ios-accent);
+    background: var(--ios-accent-light);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2);
+}
+
+.service-item-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.service-item-name {
+    font-size: 15px;
+    color: var(--ios-text-primary);
+    font-weight: 500;
+    flex: 1;
+}
+
+.service-item-checkbox:has(input:checked) .service-item-name {
+    color: var(--ios-accent);
+    font-weight: 600;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .service-items-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .service-item-checkbox {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+    
+    .service-item-icon {
+        font-size: 22px;
+        width: 26px;
+    }
+    
+    .service-item-name {
+        font-size: 14px;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 360px) {
+    .service-item-checkbox {
+        padding: 10px 12px;
+    }
+    
+    .service-item-icon {
+        font-size: 20px;
+        width: 24px;
+    }
+    
+    .service-item-name {
+        font-size: 13px;
+    }
 }

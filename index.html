@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script type="module" src="script.js?v=2.2.0"></script>
+    <script type="module" src="script.js?v=2.2.1"></script>
     <script type="module">
         import { db, auth } from './firebase-config.js';
         window.firebaseDb = db;
@@ -20,6 +20,152 @@
     </script>
 </head>
 <body>
+    
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<div id="auth-overlay" class="auth-overlay">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h2>Учёт ремонта автомобиля</h2>
+            <p>Войдите или создайте аккаунт для синхронизации данных</p>
+        </div>
+
+        <!-- Табы переключения -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">
+                <ion-icon name="log-in-outline"></ion-icon>
+                <span>Вход</span>
+            </button>
+            <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register')">
+                <ion-icon name="person-add-outline"></ion-icon>
+                <span>Регистрация</span>
+            </button>
+        </div>
+
+        <!-- Форма входа -->
+        <form id="login-form" class="auth-form active">
+            <div class="form-group">
+                <label for="login-email">
+                    <ion-icon name="mail-outline"></ion-icon>
+                    Email
+                </label>
+                <input 
+                    type="email" 
+                    id="login-email" 
+                    placeholder="your@email.com" 
+                    autocomplete="email"
+                    required
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="login-password">
+                    <ion-icon name="lock-closed-outline"></ion-icon>
+                    Пароль
+                </label>
+                <div class="password-input">
+                    <input 
+                        type="password" 
+                        id="login-password" 
+                        placeholder="••••••••" 
+                        autocomplete="current-password"
+                        required
+                    >
+                    <button type="button" class="toggle-password" onclick="togglePassword('login-password')">
+                        <ion-icon name="eye-outline"></ion-icon>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="auth-btn auth-btn-primary">
+                <ion-icon name="log-in-outline"></ion-icon>
+                Войти
+            </button>
+            
+            <div id="login-error" class="auth-error"></div>
+        </form>
+
+        <!-- Форма регистрации -->
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label for="register-name">
+                    <ion-icon name="person-outline"></ion-icon>
+                    Имя
+                </label>
+                <input 
+                    type="text" 
+                    id="register-name" 
+                    placeholder="Ваше имя" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="register-email">
+                    <ion-icon name="mail-outline"></ion-icon>
+                    Email
+                </label>
+                <input 
+                    type="email" 
+                    id="register-email" 
+                    placeholder="your@email.com" 
+                    autocomplete="email"
+                    required
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="register-password">
+                    <ion-icon name="lock-closed-outline"></ion-icon>
+                    Пароль
+                </label>
+                <div class="password-input">
+                    <input 
+                        type="password" 
+                        id="register-password" 
+                        placeholder="Минимум 6 символов" 
+                        minlength="6"
+                        required
+                    >
+                    <button type="button" class="toggle-password" onclick="togglePassword('register-password')">
+                        <ion-icon name="eye-outline"></ion-icon>
+                    </button>
+                </div>
+                <div class="password-strength" id="password-strength"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="register-confirm">
+                    <ion-icon name="lock-closed-outline"></ion-icon>
+                    Подтвердите пароль
+                </label>
+                <div class="password-input">
+                    <input 
+                        type="password" 
+                        id="register-confirm" 
+                        placeholder="Повторите пароль" 
+                        minlength="6"
+                        required
+                    >
+                    <button type="button" class="toggle-password" onclick="togglePassword('register-confirm')">
+                        <ion-icon name="eye-outline"></ion-icon>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="auth-btn auth-btn-primary">
+                <ion-icon name="person-add-outline"></ion-icon>
+                Создать аккаунт
+            </button>
+            
+            <div id="register-error" class="auth-error"></div>
+        </form>
+
+        <div class="auth-footer">
+            <p>Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</p>
+        </div>
+    </div>
+</div>
+    
     <div class="container">
         <header class="top-header">
             <h1><span class="header-icon">🔧</span>Учёт ремонта автомобиля</h1>
@@ -30,19 +176,7 @@
             </div>
         </header>
 
-        <!-- ЭКРАН АВТОРИЗАЦИИ -->
-        <div id="auth-overlay" class="auth-overlay">
-            <div class="auth-card">
-                <div class="auth-icon">🔒</div>
-                <h2>Вход в систему</h2>
-                <p>Введите данные для синхронизации</p>
-                <input type="email" id="auth-email" placeholder="Email" autocomplete="email" class="auth-input">
-                <input type="password" id="auth-password" placeholder="Пароль" autocomplete="current-password" class="auth-input">
-               <button id="auth-login-btn" class="btn btn-success auth-btn">Войти</button>
-<button id="auth-register-btn" class="btn btn-secondary auth-btn" style="margin-top: 8px;">Создать аккаунт</button>
-                <p id="auth-error" class="auth-error"></p>
-            </div>
-        </div>
+
 
         <!-- ЗАГРУЗКА -->
         <div id="loading-overlay" class="loading-overlay">
@@ -233,71 +367,82 @@
                     </div>
                 </div>
 
-                <div class="form-section">
-                    <h3>Что менялось?</h3>
-                    <div class="service-items-grid">
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="oil">
-                            <span class="service-item-icon">🛢️</span>
-                            <span class="service-item-name">Масло</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="oilFilter">
-                            <span class="service-item-icon">🔵</span>
-                            <span class="service-item-name">Масляный фильтр</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="airFilter">
-                            <span class="service-item-icon">💨</span>
-                            <span class="service-item-name">Воздушный фильтр</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="cabinFilter">
-                            <span class="service-item-icon">🌬️</span>
-                            <span class="service-item-name">Салонный фильтр</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="sparkPlugs">
-                            <span class="service-item-icon">⚡</span>
-                            <span class="service-item-name">Свечи зажигания</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="brakePads">
-                            <span class="service-item-icon">🔴</span>
-                            <span class="service-item-name">Тормозные колодки</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="coolant">
-                            <span class="service-item-icon">❄️</span>
-                            <span class="service-item-name">Охлаждающая жидкость</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="brakeFluid">
-                            <span class="service-item-icon">💧</span>
-                            <span class="service-item-name">Тормозная жидкость</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="transmissionFluid">
-                            <span class="service-item-icon">⚙️</span>
-                            <span class="service-item-name">Трансмиссионное масло</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="tires">
-                            <span class="service-item-icon">🛞</span>
-                            <span class="service-item-name">Шины/Колёса</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="battery">
-                            <span class="service-item-icon">🔋</span>
-                            <span class="service-item-name">Аккумулятор</span>
-                        </label>
-                        <label class="service-item-checkbox">
-                            <input type="checkbox" name="service-item" value="wipers">
-                            <span class="service-item-icon">🌧️</span>
-                            <span class="service-item-name">Дворники</span>
-                        </label>
-                    </div>
-                </div>
+              <div class="form-section">
+    <h3>ЧТО МЕНЯЛОСЬ?</h3>
+    <div class="service-items-grid">
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="oil">
+            <span class="service-item-icon">🛢️</span>
+            <span class="service-item-name">Масло</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="oilFilter">
+            <span class="service-item-icon">🔵</span>
+            <span class="service-item-name">Масляный фильтр</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="airFilter">
+            <span class="service-item-icon">💨</span>
+            <span class="service-item-name">Воздушный фильтр</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="cabinFilter">
+            <span class="service-item-icon">🌬️</span>
+            <span class="service-item-name">Салонный фильтр</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="sparkPlugs">
+            <span class="service-item-icon">⚡</span>
+            <span class="service-item-name">Свечи зажигания</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="brakePads">
+            <span class="service-item-icon">🔴</span>
+            <span class="service-item-name">Тормозные колодки</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="coolant">
+            <span class="service-item-icon">❄️</span>
+            <span class="service-item-name">Охлаждающая жидкость</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="brakeFluid">
+            <span class="service-item-icon">💧</span>
+            <span class="service-item-name">Тормозная жидкость</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="transmissionFluid">
+            <span class="service-item-icon">⚙️</span>
+            <span class="service-item-name">Трансмиссионное масло</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="tires">
+            <span class="service-item-icon">🛞</span>
+            <span class="service-item-name">Шины/Колёса</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="battery">
+            <span class="service-item-icon">🔋</span>
+            <span class="service-item-name">Аккумулятор</span>
+        </label>
+        
+        <label class="service-item-checkbox">
+            <input type="checkbox" name="service-item" value="wipers">
+            <span class="service-item-icon">🌧️</span>
+            <span class="service-item-name">Дворники</span>
+        </label>
+    </div>
+</div>
 
                 <div class="form-section">
                     <h3>Запчасти и материалы</h3>

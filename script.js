@@ -2,6 +2,7 @@
 import { db, auth } from './firebase-config.js';
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ===== ИМЕНА КОЛЛЕКЦИЙ =====
 const COLLECTION_RECORDS = 'car_records';
@@ -127,101 +128,220 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ===== АВТОРИЗАЦИЯ =====
+
+// Переключение табов Вход/Регистрация
+function switchAuthTab(tab) {
+    const tabs = document.querySelectorAll('.auth-tab');
+    const forms = document.querySelectorAll('.auth-form');
+    
+    tabs.forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    
+    forms.forEach(f => {
+        f.classList.toggle('active', f.id === `${tab}-form`);
+    });
+    
+    // Очищаем ошибки
+    document.getElementById('login-error').classList.remove('show');
+    document.getElementById('register-error').classList.remove('show');
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('register-error').textContent = '';
+}
+
+// Показ/скрытие пароля
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const button = input.parentElement.querySelector('.toggle-password');
+    const icon = button?.querySelector('ion-icon');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon?.setAttribute('name', 'eye-off-outline');
+    } else {
+        input.type = 'password';
+        icon?.setAttribute('name', 'eye-outline');
+    }
+}
+
+// Проверка сложности пароля
+function checkPasswordStrength(password) {
+    const strengthBar = document.getElementById('password-strength');
+    if (!strengthBar) return;
+    
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    
+    strengthBar.className = 'password-strength';
+    
+    if (password.length === 0) {
+        strengthBar.classList.remove('weak', 'medium', 'strong');
+    } else if (strength <= 2) {
+        strengthBar.classList.add('weak');
+    } else if (strength <= 4) {
+        strengthBar.classList.add('medium');
+    } else {
+        strengthBar.classList.add('strong');
+    }
+}
+
+// Сообщения об ошибках авторизации
+function getAuthErrorMessage(errorCode) {
+    const messages = {
+        'auth/email-already-in-use': 'Этот email уже зарегистрирован',
+        'auth/invalid-email': 'Некорректный email',
+        'auth/weak-password': 'Пароль слишком короткий (минимум 6 символов)',
+        'auth/user-not-found': 'Пользователь не найден',
+        'auth/wrong-password': 'Неверный пароль',
+        'auth/invalid-credential': 'Неверный email или пароль',
+        'auth/too-many-requests': 'Слишком много попыток. Попробуйте позже',
+        'auth/network-request-failed': 'Ошибка сети. Проверьте подключение'
+    };
+    return messages[errorCode] || 'Произошла ошибка. Попробуйте еще раз';
+}
+
+// Настройка UI авторизации
 function setupAuthUI() {
-    const loginBtn = document.getElementById('auth-login-btn');
-    const registerBtn = document.getElementById('auth-register-btn');
-
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const passwordInput = document.getElementById('register-password');
+    
+    // Обработчик ввода пароля для индикатора сложности
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+        });
+    }
+    
     // === ЛОГИКА ВХОДА ===
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            const errorEl = document.getElementById('auth-error');
-
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            
             if (!email || !password) {
                 errorEl.textContent = 'Заполните все поля';
+                errorEl.classList.add('show');
                 return;
             }
-
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Вход...';
+            
+            errorEl.classList.remove('show');
             errorEl.textContent = '';
-
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 console.error('Auth error:', error);
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-                    errorEl.textContent = 'Неверный email или пароль';
-                } else {
-                    errorEl.textContent = 'Ошибка входа';
-                }
+                errorEl.textContent = getAuthErrorMessage(error.code);
+                errorEl.classList.add('show');
             } finally {
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Войти';
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
             }
         });
     }
-
+    
     // === ЛОГИКА РЕГИСТРАЦИИ ===
-    if (registerBtn) {
-        registerBtn.addEventListener('click', async () => {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            const errorEl = document.getElementById('auth-error');
-
-            if (!email || !password) {
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            const errorEl = document.getElementById('register-error');
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            
+            // Валидация
+            if (!name || !email || !password || !confirm) {
                 errorEl.textContent = 'Заполните все поля';
+                errorEl.classList.add('show');
                 return;
             }
+            
             if (password.length < 6) {
                 errorEl.textContent = 'Пароль должен содержать минимум 6 символов';
+                errorEl.classList.add('show');
                 return;
             }
-
-            registerBtn.disabled = true;
-            registerBtn.textContent = 'Создание...';
+            
+            if (password !== confirm) {
+                errorEl.textContent = 'Пароли не совпадают';
+                errorEl.classList.add('show');
+                return;
+            }
+            
+            errorEl.classList.remove('show');
             errorEl.textContent = '';
-
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                
+                // Сохраняем имя пользователя
+                await userCredential.user.updateProfile({
+                    displayName: name
+                });
+                
+                // Создаем документ пользователя в Firestore
+                await setDoc(doc(db, 'users', userCredential.user.uid), {
+                    name: name,
+                    email: email,
+                    createdAt: serverTimestamp()
+                });
+                
                 showToast('Успех', 'Аккаунт создан! Загружаем данные...', 'success');
             } catch (error) {
                 console.error('Registration error:', error);
-                if (error.code === 'auth/email-already-in-use') {
-                    errorEl.textContent = 'Этот email уже зарегистрирован';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorEl.textContent = 'Некорректный email';
-                } else if (error.code === 'auth/weak-password') {
-                    errorEl.textContent = 'Слишком слабый пароль';
-                } else {
-                    errorEl.textContent = 'Ошибка: ' + error.message;
-                }
+                errorEl.textContent = getAuthErrorMessage(error.code);
+                errorEl.classList.add('show');
             } finally {
-                registerBtn.disabled = false;
-                registerBtn.textContent = 'Создать аккаунт';
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
             }
         });
     }
 }
 
+// Слушатель состояния аутентификации
 function setupAuthListener() {
     onAuthStateChanged(auth, async (user) => {
         const authOverlay = document.getElementById('auth-overlay');
+        const container = document.querySelector('.container');
+        const bottomNav = document.querySelector('.bottom-nav');
         
         if (user) {
+            // Пользователь вошёл
             if (authOverlay) authOverlay.style.display = 'none';
+            if (container) container.style.display = 'block';
+            if (bottomNav) bottomNav.style.display = 'flex';
+            
             isFirebaseConnected = true;
             updateSyncStatus('connected');
             
             console.log('✅ Authenticated as:', user.uid);
             
-            // 🔒 ОЧИЩАЕМ ЛОКАЛЬНЫЕ ДАННЫЕ ПРЕДЫДУЩЕГО ПОЛЬЗОВАТЕЛЯ
+            // Очищаем локальные данные предыдущего пользователя
             clearAllLocalData();
             
             showLoading('Синхронизация...');
             
             try {
+                // Загружаем все данные пользователя из Firebase
                 await syncFromFirebase();
                 await syncFuelFromFirebase();
                 await syncProfileFromFirebase();
@@ -231,6 +351,7 @@ function setupAuthListener() {
                 await syncMileageFromFirebase();
                 await syncNotificationSettingsFromFirebase();
                 
+                // Обновляем весь интерфейс
                 updateUnifiedHistory();
                 updateStats();
                 updateFuelStats();
@@ -252,11 +373,16 @@ function setupAuthListener() {
             } catch (error) {
                 console.error('❌ Sync error:', error);
                 updateSyncStatus('error');
+                showToast('Ошибка', 'Не удалось загрузить данные', 'danger');
             } finally {
                 hideLoading();
             }
         } else {
+            // Пользователь вышел
             if (authOverlay) authOverlay.style.display = 'flex';
+            if (container) container.style.display = 'none';
+            if (bottomNav) bottomNav.style.display = 'none';
+            
             isFirebaseConnected = false;
             updateSyncStatus('local');
             
@@ -265,9 +391,12 @@ function setupAuthListener() {
     });
 }
 
+// Выход из системы
 async function logoutUser() {
     if (!await showConfirm('Выход из системы', 'Вы уверены, что хотите выйти?', 'Выйти', 'Отмена', 'warning')) return;
+    
     showLoading('Выход...');
+    
     try {
         clearAllLocalData();
         await signOut(auth);
@@ -3216,3 +3345,7 @@ window.quickAddMileage = quickAddMileage;
 window.logoutUser = logoutUser;
 window.escapeHtml = escapeHtml;
 window.deleteAccount = deleteAccount;
+// ===== ЭКСПОРТ ФУНКЦИЙ =====
+window.switchAuthTab = switchAuthTab;
+window.togglePassword = togglePassword;
+window.checkPasswordStrength = checkPasswordStrength;
